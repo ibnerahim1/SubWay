@@ -6,7 +6,7 @@ using DG.Tweening;
 public class Settings : MonoBehaviour
 {
     [SerializeField] GameObject settingsPanel, musicImg, hapticImg;
-    [HideInInspector]public AudioSource bgMusic;
+    [SerializeField] AudioListener audioListener;
 
     private int music, haptic;
 
@@ -32,7 +32,7 @@ public class Settings : MonoBehaviour
         music = music == 0 ? 1 : 0;
         PlayerPrefs.SetInt("music", music);
         musicImg.SetActive(music == 0);
-        bgMusic.enabled = (music == 1);
+        audioListener.enabled = (music == 1);
         ToggleSettings(false);
     }
     public void ToggleHaptic()
@@ -49,6 +49,6 @@ public class Settings : MonoBehaviour
         haptic = PlayerPrefs.HasKey("haptic") ? PlayerPrefs.GetInt("haptic") : 1;
         musicImg.SetActive(music == 0);
         hapticImg.SetActive(haptic == 0);
-        bgMusic.enabled = (music == 1);
+        audioListener.enabled = (music == 1);
     }
 }

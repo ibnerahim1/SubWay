@@ -6,8 +6,8 @@ using TMPro;
 
 public class Store : MonoBehaviour
 {
-    public Button ballsButton, powerButton, incomeButton;
-    public TextMeshProUGUI ballsCostTxt, ballsLevelTxt, powerCostTxt, powerLevelTxt, incomeCostTxt, incomeLevelTxt;
+    public Button wallButton, floorButton, tableButton;
+    public TextMeshProUGUI wallCostTxt, wallLevelTxt, floorCostTxt, floorLevelTxt, tableCostTxt, tableLevelTxt;
 
     GameManager gManager;
     // Start is called before the first frame update
@@ -24,25 +24,31 @@ public class Store : MonoBehaviour
     }
     private void LateUpdate()
     {
-        ballsButton.interactable =  gManager.cash > GetBallsCost();
-        powerButton.interactable = gManager.cash > GetPowerCost();
-        incomeButton.interactable = gManager.cash > GetIncomeCost();
+        wallButton.interactable = (gManager.cash > GetWallCost() && gManager.wallLevel < gManager.walls.childCount);
+        floorButton.interactable = (gManager.cash > GetFloorCost() && gManager.floorLevel < gManager.floors.childCount);
+        tableButton.interactable = (gManager.cash > GetTableCost() && gManager.tableLevel < gManager.tables.childCount);
     }
     public void Upgrade(string val)
     {
         switch (val)
         {
-            case "balls":
-                gManager.cash -= GetBallsCost();
-                gManager.ballsLevel++;
+            case "wall":
+                gManager.walls.GetChild(gManager.wallLevel - 1).gameObject.SetActive(false);
+                gManager.cash -= GetWallCost();
+                gManager.wallLevel++;
+                gManager.walls.GetChild(gManager.wallLevel - 1).gameObject.SetActive(true);
                 break;
-            case "power":
-                gManager.cash -= GetPowerCost();
-                gManager.powerLevel++;
+            case "floor":
+                gManager.floors.GetChild(gManager.floorLevel - 1).gameObject.SetActive(false);
+                gManager.cash -= GetFloorCost();
+                gManager.floorLevel++;
+                gManager.floors.GetChild(gManager.floorLevel - 1).gameObject.SetActive(true);
                 break;
-            case "income":
-                gManager.cash -= GetIncomeCost();
-                gManager.incomeLevel++;
+            case "table":
+                gManager.tables.GetChild(gManager.tableLevel - 1).gameObject.SetActive(false);
+                gManager.cash -= GetTableCost();
+                gManager.tableLevel++;
+                gManager.tables.GetChild(gManager.tableLevel - 1).gameObject.SetActive(true);
                 break;
         }
         UpdateStore();
@@ -50,31 +56,30 @@ public class Store : MonoBehaviour
     }
     void UpdateStore()
     {
-        ballsLevelTxt.text = "LEVEL " + gManager.ballsLevel;
-        powerLevelTxt.text = "LEVEL " + gManager.powerLevel;
-        incomeLevelTxt.text = "LEVEL " + gManager.incomeLevel;
+        wallLevelTxt.text = gManager.wallLevel < gManager.walls.childCount? "LEVEL " + gManager.wallLevel : "MAX";
+        floorLevelTxt.text = gManager.floorLevel < gManager.floors.childCount ? "LEVEL " + gManager.floorLevel : "MAX";
+        tableLevelTxt.text = gManager.tableLevel < gManager.tables.childCount ? "LEVEL " + gManager.tableLevel : "MAX";
 
-        ballsCostTxt.text = gManager.GetValue(GetBallsCost());
-        powerCostTxt.text = gManager.GetValue(GetPowerCost());
-        incomeCostTxt.text = gManager.GetValue(GetIncomeCost());
+        wallCostTxt.text = gManager.GetValue(GetWallCost());
+        floorCostTxt.text = gManager.GetValue(GetFloorCost());
+        tableCostTxt.text = gManager.GetValue(GetTableCost());
     }
 
-    public int GetBallsCost()
+    public int GetWallCost()
     {
-        return (int)Mathf.Pow((gManager.ballsLevel) * 10, 2);
+        return (int)Mathf.Pow((gManager.wallLevel) * 10, 2);
     }
-    public int GetPowerCost()
+    public int GetFloorCost()
     {
-        return (int)Mathf.Pow((gManager.powerLevel) * 10, 2);
+        return (int)Mathf.Pow((gManager.floorLevel) * 10, 2);
     }
-    public int GetIncomeCost()
+    public int GetTableCost()
     {
-        return (int)Mathf.Pow((gManager.incomeLevel) * 10, 2);
+        return (int)Mathf.Pow((gManager.tableLevel) * 10, 2);
     }
 
     public string GetValue(float val)
     {
-        //return (Mathf.Round(val * (Mathf.Abs(val) < 1000 ? 10 : 0.1f)) / (Mathf.Abs(val) < 1000 ? 10 : 100)).ToString() + (Mathf.Abs(val) < 1000 ? "M" : "B");
         string str = null;
 
         if (val < 1000)

@@ -16,6 +16,6 @@ public class BGMusic : MonoBehaviour
             bgMusic = GetComponent<BGMusic>();
             DontDestroyOnLoad(gameObject);
         }
-        FindObjectOfType<Settings>().bgMusic = GetComponent<AudioSource>();
+        //FindObjectOfType<Settings>().bgMusic = GetComponent<AudioSource>();
     }
 }

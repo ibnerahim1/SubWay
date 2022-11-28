@@ -10,18 +10,30 @@ using MoreMountains.NiceVibrations;
 public class GameManager : MonoBehaviour
 {
     public enum hapticTypes {soft, light, medium, heavy, success, failure};
+    public enum soundTypes { pop, upgrade, money, coins, tap, win};
+    public Transform walls, floors, tables, breadBottom, italianBread, sesameBread, GrillBread, oatsBread, patty, grillPatty, ham, cheese, lettuce, tomato, cucumber;
+    public Level[] levels;
+    public AudioClip[] audioClips;
 
-    [SerializeField] Transform cashObj, popSound, leaderBoard;
-    [SerializeField]GameObject failPanel, winPanel, menuPanel, gamePanel, storePanel;
-    [SerializeField]TextMeshProUGUI levelTxt, cashTxt;
+    [SerializeField] Transform cashObj, sound, progressBar, camPositions, rows, ingredientContainer;
+    [SerializeField] GameObject failPanel, winPanel, menuPanel, gamePanel, storePanel, cashPanel, whiteScreen, nextButton, breadSelection, ingredientSelection, tray;
+    [SerializeField] TextMeshProUGUI dayTxt, cashTxt;
 
-    [HideInInspector] public bool gameStarted, onUI;
-    [HideInInspector] public int level, ballsLevel, powerLevel, incomeLevel, cash, score, rank;
-    [HideInInspector]public float fov, time;
+    [HideInInspector] public bool gameStarted;
+    [HideInInspector] public int level, currentLevel, wallLevel, floorLevel, tableLevel, cash, touchCount;
+    [HideInInspector] public enum Breads {italian, sesame, grill, oats};
+    [HideInInspector] Breads breadType;
+    [HideInInspector] public enum Ingredients { patty, grillPatty, ham, cheese, lettuce, tomato, cucumber};
+    [HideInInspector] Ingredients ingredientType;
 
-
+    private List<Ingredients> ingredientLayers = new List<Ingredients>();
+    private Transform bread, breadBase, ingredient;
+    private const int camTween = 0;
     private Camera cam;
-    private bool once;
+    private Ingredients prevIngredient;
+    private int targetTouchCount;
+    private float dropHeight = 1.1f, popPitch;
+    private AudioSource soundIns;
 
     private void Awake()
     {
@@ -30,9 +42,22 @@ public class GameManager : MonoBehaviour
     private void Start()
     {
         cam = Camera.main;
-        fov = cam.fieldOfView;
         level = PlayerPrefs.HasKey("level") ? PlayerPrefs.GetInt("level") : 1;
-        levelTxt.text = "LEVEL " + level;
+        dayTxt.text = "DAY " + (((level - 1)/ 5) + 1);
+        for (int i = 0; i < (level - 1) % 5; i++)
+        {
+            progressBar.GetChild(i).GetChild(0).gameObject.SetActive(true);
+        }
+        progressBar.GetChild((level - 1) % 5).GetChild(1).gameObject.SetActive(true);
+        cam.transform.DOMove(camPositions.GetChild(0).position, 0.5f).SetEase(Ease.Linear).SetId(camTween).SetDelay(0.5f);
+        cam.transform.DORotate(camPositions.GetChild(0).eulerAngles, 0.5f).SetEase(Ease.Linear).SetId(camTween).SetDelay(0.5f);
+
+        walls.GetChild(0).gameObject.SetActive(false);
+        floors.GetChild(0).gameObject.SetActive(false);
+        tables.GetChild(0).gameObject.SetActive(false);
+        walls.GetChild(wallLevel - 1).gameObject.SetActive(true);
+        floors.GetChild(floorLevel - 1).gameObject.SetActive(true);
+        tables.GetChild(tableLevel - 1).gameObject.SetActive(true);
     }
 
     void Update()
@@ -52,85 +77,103 @@ public class GameManager : MonoBehaviour
 #endif
         #endregion
         cashTxt.text = GetValue(cash);
+        if (popPitch > 1)
+            popPitch = Mathf.Lerp(popPitch, 1, Time.deltaTime);
+    }
+    public void PlayLevel()
+    {
+        PlaySound(soundTypes.tap);
 
-        if(!gameStarted && !onUI && !once && Input.GetMouseButtonDown(0))
+        gameStarted = true;
+        menuPanel.SetActive(false);
+        gamePanel.SetActive(true);
+        cashPanel.SetActive(false);
+        DOTween.Kill(camTween);
+        cam.transform.DOMove(camPositions.GetChild(2).position, 0.5f).SetEase(Ease.Linear).SetId(camTween);
+        cam.transform.DORotate(camPositions.GetChild(2).eulerAngles, 0.5f).SetEase(Ease.Linear).SetId(camTween).OnComplete(()=>breadSelection.SetActive(true));
+    }
+    public void Next()
+    {
+        PlaySound(soundTypes.win);
+
+        nextButton.SetActive(false);
+        cam.transform.GetChild(0).gameObject.SetActive(true);
+        ingredientSelection.SetActive(false);
+        breadBase.DOMove(new Vector3(0, 1, 0), 0.5f).SetEase(Ease.Linear).SetDelay(0.5f);
+        bread.DOJump(new Vector3(0, dropHeight, 0), dropHeight + 0.3f, 1, 1).SetEase(Ease.Linear);
+        bread.DORotate(new Vector3(360, 0, 0), 1).SetEase(Ease.Linear).OnComplete(() =>
         {
-            gameStarted = true;
-            once = true;
-        }
+
+            cashPanel.SetActive(true);
+            gamePanel.SetActive(false);
+            bread.parent = breadBase;
+            breadBase.DOJump(breadBase.position, 0.2f, 1, 0.5f).SetEase(Ease.Linear).SetDelay(0.5f);
+            tray.SetActive(true);
+
+            DOTween.Kill(camTween);
+            cam.transform.DOMove(camPositions.GetChild(0).position, 0.5f).SetEase(Ease.Linear).SetId(camTween);
+            cam.transform.DORotate(camPositions.GetChild(0).eulerAngles, 0.5f).SetEase(Ease.Linear).SetId(camTween);
+            StartCoroutine(Money());
+        });
+    }
+    IEnumerator Money()
+    {
+        yield return new WaitForSeconds(1);
+
+        PlaySound(soundTypes.money);
+        GetComponent<CoinMagnet>().SpawnCoins(15);
+
     }
 
     public void LevelComplete()
     {
         if (gameStarted)
         {
+            PlaySound(soundTypes.tap);
             PlayHaptic(hapticTypes.success);
 
             gameStarted = false;
             level++;
             PlayerPrefs.SetInt("level", level);
-            levelTxt.text = "LEVEL " + level;
             winPanel.SetActive(true);
             cam.transform.GetChild(0).gameObject.SetActive(true);
+            cashPanel.SetActive(true);
         }
     }
-    public void LevelFail()
-    {
-        if (gameStarted)
-        {
-            PlayHaptic(hapticTypes.failure);
+    //public void LevelFail()
+    //{
+    //    if (gameStarted)
+    //    {
+    //        PlayHaptic(hapticTypes.failure);
 
-            Names names = FindObjectOfType<Names>();
+    //        SaveData();
 
-            rank = (int)(rank * Random.Range(0.95f, 0.99f));
-            int d = Random.Range(1, 5);
-            for (int i = 0; i < leaderBoard.childCount; i++)
-            {
-                leaderBoard.GetChild(i).GetChild(0).GetComponent<TextMeshProUGUI>().text = (rank - 3 + i).ToString();
-                if (i == d)
-                {
-                    leaderBoard.GetChild(i).DOScale(Vector3.one * 1.2f, 0.5f).SetLoops(-1, LoopType.Yoyo).SetEase(Ease.Linear).SetDelay(1.5f);
-                    leaderBoard.GetChild(i).GetChild(0).GetChild(0).GetComponent<TextMeshProUGUI>().text = "YOU";
-                    leaderBoard.GetChild(i).GetChild(0).GetChild(0).GetComponent<TextMeshProUGUI>().color = Color.white;
-                    leaderBoard.GetChild(i).GetChild(0).GetChild(1).GetComponent<TextMeshProUGUI>().text = score.ToString();
-                }
-                else
-                {
-                    leaderBoard.GetChild(i).GetChild(0).GetChild(0).GetComponent<TextMeshProUGUI>().text = names.names[Random.Range(0, 1000)];
-                    leaderBoard.GetChild(i).GetChild(0).GetChild(1).GetComponent<TextMeshProUGUI>().text = ((int)(score + ( (d - i) * score * Random.Range(0.05f, 0.09f)))).ToString();
-                }
-            }
-            SaveData();
-
-            failPanel.SetActive(true);
-            gameStarted = false;
-        }
-    }
+    //        failPanel.SetActive(true);
+    //        gameStarted = false;
+    //    }
+    //}
     public void Restart()
     {
-        SceneManager.LoadScene(0);
+        PlaySound(soundTypes.tap);
+
+        whiteScreen.GetComponent<Image>().DOFade(1, 0.5f).SetEase(Ease.Linear).OnComplete(()=> SceneManager.LoadScene(0));
     }
 
     public void LoadData()
     {
-        cash = PlayerPrefs.HasKey("cash") ? PlayerPrefs.GetInt("cash") : 0;
-        ballsLevel = PlayerPrefs.HasKey("ballsLevel") ? PlayerPrefs.GetInt("ballsLevel") : 1;
-        powerLevel = PlayerPrefs.HasKey("powerLevel") ? PlayerPrefs.GetInt("powerLevel") : 1;
-        incomeLevel = PlayerPrefs.HasKey("incomeLevel") ? PlayerPrefs.GetInt("incomeLevel") : 1;
-        score = PlayerPrefs.HasKey("score") ? PlayerPrefs.GetInt("score") : 0;
-        rank = PlayerPrefs.HasKey("rank") ? PlayerPrefs.GetInt("rank") : Random.Range(3000, 5000);
+        cash = PlayerPrefs.HasKey("cash") ? PlayerPrefs.GetInt("cash") : 10000;
+        wallLevel = PlayerPrefs.HasKey("wallLevel") ? PlayerPrefs.GetInt("wallLevel") : 1;
+        floorLevel = PlayerPrefs.HasKey("floorLevel") ? PlayerPrefs.GetInt("floorLevel") : 1;
+        tableLevel = PlayerPrefs.HasKey("tableLevel") ? PlayerPrefs.GetInt("tableLevel") : 1;
     }
     public void SaveData()
     {
         PlayerPrefs.SetInt("level", level);
         PlayerPrefs.SetInt("cash", cash);
 
-        PlayerPrefs.SetInt("ballsLevel", ballsLevel);
-        PlayerPrefs.SetInt("powerLevel", powerLevel);
-        PlayerPrefs.SetInt("incomeLevel", incomeLevel);
-
-        PlayerPrefs.SetInt("score", score);
-        PlayerPrefs.SetInt("rank", rank);
+        PlayerPrefs.SetInt("wallLevel", wallLevel);
+        PlayerPrefs.SetInt("floorLevel", floorLevel);
+        PlayerPrefs.SetInt("tableLevel", tableLevel);
     }
 
     public void PlayHaptic(hapticTypes hType)
@@ -154,6 +197,35 @@ public class GameManager : MonoBehaviour
                 break;
             case hapticTypes.failure:
                 MMVibrationManager.Haptic(HapticTypes.Failure);
+                break;
+        }
+    }
+    public void PlaySound(soundTypes sType)
+    {
+        soundIns = Instantiate(sound).GetComponent<AudioSource>();
+        Destroy(soundIns.gameObject, 1);
+        switch (sType)
+        {
+            case soundTypes.pop:
+                soundIns.pitch = popPitch;
+                popPitch += 0.02f;
+                soundIns.clip = audioClips[0];
+                break;
+            case soundTypes.upgrade:
+                soundIns.clip = audioClips[1];
+                break;
+            case soundTypes.money:
+                soundIns.clip = audioClips[2];
+                break;
+            case soundTypes.coins:
+                soundIns.clip = audioClips[0];
+                soundIns.pitch = 0.8f;
+                break;
+            case soundTypes.tap:
+                soundIns.clip = audioClips[3];
+                break;
+            case soundTypes.win:
+                soundIns.clip = audioClips[4];
                 break;
         }
     }
@@ -191,9 +263,210 @@ public class GameManager : MonoBehaviour
 
         return str;
     }
-
-    public void OnUI(bool val)
+    public void ToggleStore(bool condition)
     {
-        onUI = val;
+        PlaySound(soundTypes.tap);
+
+        if (condition)
+        {
+            DOTween.Kill(camTween);
+            cam.transform.DOMove(camPositions.GetChild(3).position, 0.5f).SetEase(Ease.Linear).SetId(camTween);
+            cam.transform.DORotate(camPositions.GetChild(3).eulerAngles, 0.5f).SetEase(Ease.Linear).SetId(camTween);
+            storePanel.SetActive(true);
+            menuPanel.SetActive(false);
+        }
+        else
+        {
+            DOTween.Kill(camTween);
+            cam.transform.DOMove(camPositions.GetChild(0).position, 0.5f).SetEase(Ease.Linear).SetId(camTween);
+            cam.transform.DORotate(camPositions.GetChild(0).eulerAngles, 0.5f).SetEase(Ease.Linear).SetId(camTween);
+            storePanel.SetActive(false);
+            menuPanel.SetActive(true);
+        }
     }
+    public void BreadSelect(string name)
+    {
+        PlaySound(soundTypes.tap);
+
+        switch (name)
+        {
+            case "italian":
+                breadType = Breads.italian;
+                bread = Instantiate(italianBread, new Vector3(0, 1.5f, 0), Quaternion.identity);
+                break;
+            case "sesame":
+                breadType = Breads.sesame;
+                bread = Instantiate(sesameBread, new Vector3(0, 1.5f, 0), Quaternion.identity);
+                break;
+            case "grill":
+                breadType = Breads.grill;
+                bread = Instantiate(GrillBread, new Vector3(0, 1.5f, 0), Quaternion.identity);
+                break;
+            case "oats":
+                breadType = Breads.oats;
+                bread = Instantiate(oatsBread, new Vector3(0, 1.5f, 0), Quaternion.identity);
+                break;
+        }
+        breadSelection.SetActive(false);
+        DOTween.Kill(camTween);
+        cam.transform.DOMove(camPositions.GetChild(1).position, 0.5f).SetEase(Ease.Linear).SetId(camTween);
+        cam.transform.DORotate(camPositions.GetChild(1).eulerAngles, 0.5f).SetEase(Ease.Linear).SetId(camTween);
+
+        breadBase = Instantiate(breadBottom, new Vector3(0, 1.4f, 0), Quaternion.identity);
+        breadBase.DOMove(new Vector3(0, 1, 0), 0.5f).SetEase(Ease.Linear);
+        bread.DOMove(new Vector3(0, 1.1f, 0), 0.5f).SetEase(Ease.Linear);
+
+        breadBase.DOMove(new Vector3(0, 1, -0.25f), 0.5f).SetEase(Ease.Linear).SetDelay(0.5f);
+        bread.DOJump(new Vector3(0, 1.2f, 0.25f), 0.3f, 1, 1).SetEase(Ease.Linear).SetDelay(0.5f);
+        bread.DORotate(new Vector3(180, 0, 0), 1).SetEase(Ease.Linear).SetDelay(0.5f).OnComplete(()=>
+        {
+            ingredientSelection.SetActive(true);
+            DOTween.Kill(camTween);
+            cam.transform.DOMove(camPositions.GetChild(2).position, 0.5f).SetEase(Ease.Linear).SetId(camTween);
+            cam.transform.DORotate(camPositions.GetChild(2).eulerAngles, 0.5f).SetEase(Ease.Linear).SetId(camTween);
+        });
+    }
+    public void SelectIngredient(string name)
+    {
+        PlaySound(soundTypes.tap);
+
+        touchCount = 0;
+        nextButton.SetActive(false);
+        switch (name)
+        {
+            case "patty":
+                ingredientContainer.GetChild(0).GetComponent<Button>().interactable = false;
+                ingredientType = Ingredients.patty;
+                targetTouchCount = 5;
+                dropHeight += 0.02f;
+                ingredient = patty;
+                InitialiseSpheres(1);
+                break;
+
+            case "grillPatty":
+                ingredientContainer.GetChild(1).GetComponent<Button>().interactable = false;
+                ingredientType = Ingredients.grillPatty;
+                targetTouchCount = 5;
+                dropHeight += 0.02f;
+                ingredient = grillPatty;
+                InitialiseSpheres(1);
+                break;
+
+            case "ham":
+                ingredientContainer.GetChild(2).GetComponent<Button>().interactable = false;
+                ingredientType = Ingredients.ham;
+                targetTouchCount = 5;
+                dropHeight += 0.01f;
+                ingredient = ham;
+                InitialiseSpheres(1);
+                break;
+
+            case "cheese":
+                ingredientContainer.GetChild(3).GetComponent<Button>().interactable = false;
+                ingredientType = Ingredients.cheese;
+                targetTouchCount = 3;
+                dropHeight += 0.01f;
+                ingredient = cheese;
+                InitialiseSpheres(0);
+                break;
+
+            case "lettuce":
+                ingredientContainer.GetChild(4).GetComponent<Button>().interactable = false;
+                ingredientType = Ingredients.lettuce;
+                targetTouchCount = 5;
+                dropHeight += 0.01f;
+                ingredient = lettuce;
+                InitialiseSpheres(1);
+                break;
+
+            case "tomato":
+                ingredientContainer.GetChild(5).GetComponent<Button>().interactable = false;
+                ingredientType = Ingredients.tomato;
+                targetTouchCount = 7;
+                dropHeight += 0.01f;
+                ingredient = tomato;
+                InitialiseSpheres(2);
+                break;
+
+            case "cucumber":
+                ingredientContainer.GetChild(6).GetComponent<Button>().interactable = false;
+                ingredientType = Ingredients.cucumber;
+                targetTouchCount = 7;
+                dropHeight += 0.01f;
+                ingredient = cucumber;
+                InitialiseSpheres(2);
+                break;
+        }
+        ingredientSelection.SetActive(false);
+        DOTween.Kill(camTween);
+        cam.transform.DOMove(camPositions.GetChild(1).position, 0.5f).SetEase(Ease.Linear).SetId(camTween);
+        cam.transform.DORotate(camPositions.GetChild(1).eulerAngles, 0.5f).SetEase(Ease.Linear).SetId(camTween);
+    }
+    private void InitialiseSpheres(int child)
+    {
+        for (int i = 0; i < rows.GetChild(child).childCount; i++)
+        {
+            rows.GetChild(child).GetChild(i).GetComponent<TipRenderer>().Initialise(dropHeight);
+        }
+    }
+    public void Touched(Vector3 position)
+    {
+        PlaySound(soundTypes.pop);
+
+        touchCount++;
+        Transform temp = Instantiate(ingredient, position + new Vector3(0, 0.2f, 0), ingredient.rotation);
+        temp.DOMoveY(dropHeight, 0.5f).SetEase(Ease.Linear);
+        temp.parent = breadBase;
+
+        if(touchCount > targetTouchCount - 1)
+        {
+            switch (ingredientType)
+            {
+                case Ingredients.patty:
+                    dropHeight += 0.05f;
+                    break;
+
+                case Ingredients.grillPatty:
+                    dropHeight += 0.05f;
+                    break;
+
+                case Ingredients.ham:
+                    dropHeight += 0.01f;
+                    break;
+
+                case Ingredients.cheese:
+                    dropHeight += 0.02f;
+                    break;
+
+                case Ingredients.lettuce:
+                    dropHeight += 0.01f;
+                    break;
+
+                case Ingredients.tomato:
+                    dropHeight += 0.02f;
+                    break;
+
+                case Ingredients.cucumber:
+                    dropHeight += 0.02f;
+                    break;
+            }
+            ingredientLayers.Add(ingredientType);
+            if (ingredientLayers.Count > ingredientContainer.childCount - 1)
+                Next();
+            else
+            {
+                DOTween.Kill(camTween);
+                cam.transform.DOMove(camPositions.GetChild(2).position, 0.5f).SetEase(Ease.Linear).SetId(camTween);
+                cam.transform.DORotate(camPositions.GetChild(2).eulerAngles, 0.5f).SetEase(Ease.Linear).SetId(camTween).OnComplete(() => ingredientSelection.SetActive(true));
+            }
+            if (ingredientLayers.Count > levels[currentLevel].ingredients.Count - 1)
+                nextButton.SetActive(true);
+        }
+    }
+}
+[System.Serializable]
+public class Level
+{
+    public GameManager.Breads breads;
+    public List<GameManager.Ingredients> ingredients = new List<GameManager.Ingredients>();
 }
