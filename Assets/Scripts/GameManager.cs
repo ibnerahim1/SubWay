@@ -13,14 +13,16 @@ public class GameManager : MonoBehaviour
     public enum soundTypes { pop, upgrade, money, coins, tap, win};
     public Transform walls, floors, tables, breadBottom, italianBread, sesameBread, GrillBread, oatsBread, patty, grillPatty, ham, cheese, lettuce, tomato, cucumber;
     public Level[] levels;
-    public AudioClip[] audioClips;
+    public Transform[] audioClips;
 
-    [SerializeField] Transform cashObj, sound, progressBar, camPositions, rows, ingredientContainer;
-    [SerializeField] GameObject failPanel, winPanel, menuPanel, gamePanel, storePanel, cashPanel, whiteScreen, nextButton, breadSelection, ingredientSelection, tray;
-    [SerializeField] TextMeshProUGUI dayTxt, cashTxt;
+    [SerializeField] Transform cashObj, progressBar, camPositions, rows, ingredientContainer, sampleCam;
+    [SerializeField] GameObject failPanel, winPanel, menuPanel, gamePanel, storePanel, cashPanel, whiteScreen, nextButton, breadSelection, ingredientSelection, tray, orderPanel;
+    [SerializeField] TextMeshProUGUI dayTxt, cashTxt, orderCashTxt;
+    [SerializeField] Customer customer;
+    [SerializeField] GameObject[] stars;
 
     [HideInInspector] public bool gameStarted;
-    [HideInInspector] public int level, currentLevel, wallLevel, floorLevel, tableLevel, cash, touchCount;
+    [HideInInspector] public int level, currentLevel, wallLevel, floorLevel, tableLevel, cash, orderCash, touchCount;
     [HideInInspector] public enum Breads {italian, sesame, grill, oats};
     [HideInInspector] Breads breadType;
     [HideInInspector] public enum Ingredients { patty, grillPatty, ham, cheese, lettuce, tomato, cucumber};
@@ -32,8 +34,8 @@ public class GameManager : MonoBehaviour
     private Camera cam;
     private Ingredients prevIngredient;
     private int targetTouchCount;
-    private float dropHeight = 1.1f, popPitch;
-    private AudioSource soundIns;
+    private float dropHeight = 1.1f, popPitch = 0.5f, matchPercentage;
+    private Level currentOrder = new Level();
 
     private void Awake()
     {
@@ -44,6 +46,61 @@ public class GameManager : MonoBehaviour
         cam = Camera.main;
         level = PlayerPrefs.HasKey("level") ? PlayerPrefs.GetInt("level") : 1;
         dayTxt.text = "DAY " + (((level - 1)/ 5) + 1);
+
+        if ((level - 1) < levels.Length)
+            currentOrder = levels[level - 1];
+        else
+        {
+            switch (Random.Range(0, 4))
+            {
+                case 0:
+                    currentOrder.breads = Breads.italian;
+                    break;
+                case 1:
+                    currentOrder.breads = Breads.sesame;
+                    break;
+                case 2:
+                    currentOrder.breads = Breads.grill;
+                    break;
+                case 3:
+                    currentOrder.breads = Breads.oats;
+                    break;
+            }
+            for (int i = 0; i < 7; i++)
+            {
+                switch (i)
+                {
+                    case 0:
+                        if (Random.Range(0, 3) > 0)
+                            currentOrder.ingredients.Add(Ingredients.patty);
+                        break;
+                    case 1:
+                        if (Random.Range(0, 3) > 0)
+                            currentOrder.ingredients.Add(Ingredients.grillPatty);
+                        break;
+                    case 2:
+                        if (Random.Range(0, 3) > 0)
+                            currentOrder.ingredients.Add(Ingredients.ham);
+                        break;
+                    case 3:
+                        if (Random.Range(0, 3) > 0)
+                            currentOrder.ingredients.Add(Ingredients.cheese);
+                        break;
+                    case 4:
+                        if (Random.Range(0, 3) > 0)
+                            currentOrder.ingredients.Add(Ingredients.lettuce);
+                        break;
+                    case 5:
+                        if (Random.Range(0, 3) > 0)
+                            currentOrder.ingredients.Add(Ingredients.tomato);
+                        break;
+                    case 6:
+                        if (Random.Range(0, 3) > 0)
+                            currentOrder.ingredients.Add(Ingredients.cucumber);
+                        break;
+                }
+            }
+        }
         for (int i = 0; i < (level - 1) % 5; i++)
         {
             progressBar.GetChild(i).GetChild(0).gameObject.SetActive(true);
@@ -77,20 +134,21 @@ public class GameManager : MonoBehaviour
 #endif
         #endregion
         cashTxt.text = GetValue(cash);
-        if (popPitch > 1)
-            popPitch = Mathf.Lerp(popPitch, 1, Time.deltaTime);
+        if (popPitch > 0.5f)
+            popPitch = Mathf.Lerp(popPitch, 0.5f, Time.deltaTime);
     }
     public void PlayLevel()
     {
         PlaySound(soundTypes.tap);
 
+        customer.Walk();
         gameStarted = true;
         menuPanel.SetActive(false);
         gamePanel.SetActive(true);
         cashPanel.SetActive(false);
         DOTween.Kill(camTween);
-        cam.transform.DOMove(camPositions.GetChild(2).position, 0.5f).SetEase(Ease.Linear).SetId(camTween);
-        cam.transform.DORotate(camPositions.GetChild(2).eulerAngles, 0.5f).SetEase(Ease.Linear).SetId(camTween).OnComplete(()=>breadSelection.SetActive(true));
+        cam.transform.DOMove(camPositions.GetChild(4).position, 0.5f).SetEase(Ease.Linear).SetId(camTween);
+        cam.transform.DORotate(camPositions.GetChild(4).eulerAngles, 0.5f).SetEase(Ease.Linear).SetId(camTween);
     }
     public void Next()
     {
@@ -111,33 +169,93 @@ public class GameManager : MonoBehaviour
             tray.SetActive(true);
 
             DOTween.Kill(camTween);
-            cam.transform.DOMove(camPositions.GetChild(0).position, 0.5f).SetEase(Ease.Linear).SetId(camTween);
-            cam.transform.DORotate(camPositions.GetChild(0).eulerAngles, 0.5f).SetEase(Ease.Linear).SetId(camTween);
-            StartCoroutine(Money());
+            cam.transform.DOMove(camPositions.GetChild(4).position, 0.5f).SetEase(Ease.Linear).SetId(camTween);
+            cam.transform.DORotate(camPositions.GetChild(4).eulerAngles, 0.5f).SetEase(Ease.Linear).SetId(camTween);
+            StartCoroutine(LevelComplete());
         });
     }
-    IEnumerator Money()
+
+    IEnumerator LevelComplete()
     {
-        yield return new WaitForSeconds(1);
+        gameStarted = false;
+        cashPanel.SetActive(true);
+        level++;
+        PlayerPrefs.SetInt("level", level);
 
-        PlaySound(soundTypes.money);
-        GetComponent<CoinMagnet>().SpawnCoins(15);
+        int MatchCount = 0;
+        bool ingredientsMatched = true;
 
-    }
-
-    public void LevelComplete()
-    {
-        if (gameStarted)
+        for (int i = 0; i < currentOrder.ingredients.Count; i++)
         {
-            PlaySound(soundTypes.tap);
-            PlayHaptic(hapticTypes.success);
+            if (!ingredientLayers.Contains(currentOrder.ingredients[i]))
+                ingredientsMatched = false;
+        }
+        if(ingredientsMatched)
+            MatchCount++;
+        if (breadType == currentOrder.breads)
+            MatchCount++;
+        if(ingredientLayers.Count == currentOrder.ingredients.Count)
+            MatchCount++;
 
-            gameStarted = false;
-            level++;
-            PlayerPrefs.SetInt("level", level);
-            winPanel.SetActive(true);
-            cam.transform.GetChild(0).gameObject.SetActive(true);
-            cashPanel.SetActive(true);
+        yield return new WaitForSeconds(0.5f);
+
+
+        PlayHaptic(hapticTypes.success);
+        PlaySound(soundTypes.money);
+
+        switch (MatchCount)
+        {
+            case 0:
+                customer.anim.Play("angry");
+                break;
+            case 1:
+                customer.anim.Play("talk");
+                stars[0].SetActive(true);
+                orderCash = (int)(orderCash * 1.1f);
+                break;
+            case 2:
+                customer.anim.Play("happy");
+                stars[0].SetActive(true);
+                stars[1].SetActive(true);
+                orderCash = (int)(orderCash * 1.2f);
+                break;
+            case 3:
+                customer.anim.Play("jump");
+                stars[0].SetActive(true);
+                stars[1].SetActive(true);
+                stars[2].SetActive(true);
+                orderCash = (int)(orderCash * 1.3f);
+                break;
+        }
+        GetComponent<CoinMagnet>().SpawnCoins((int)(orderCash * 0.1f));
+        cash += orderCash;
+        SaveData();
+
+        yield return new WaitForSeconds(2);
+
+        gamePanel.SetActive(false);
+        cashPanel.SetActive(false);
+        winPanel.SetActive(true);
+        Instantiate(breadBase, new Vector3(0, -10, 0), Quaternion.identity);
+
+        yield return new WaitForSeconds(1.5f);
+        switch (MatchCount)
+        {
+            case 1:
+                stars[0].SetActive(true);
+                break;
+            case 2:
+                stars[0].SetActive(true);
+                yield return new WaitForSeconds(0.5f);
+                stars[1].SetActive(true);
+                break;
+            case 3:
+                stars[0].SetActive(true);
+                yield return new WaitForSeconds(0.5f);
+                stars[1].SetActive(true);
+                yield return new WaitForSeconds(0.5f);
+                stars[2].SetActive(true);
+                break;
         }
     }
     //public void LevelFail()
@@ -161,7 +279,7 @@ public class GameManager : MonoBehaviour
 
     public void LoadData()
     {
-        cash = PlayerPrefs.HasKey("cash") ? PlayerPrefs.GetInt("cash") : 10000;
+        cash = PlayerPrefs.HasKey("cash") ? PlayerPrefs.GetInt("cash") : 0;
         wallLevel = PlayerPrefs.HasKey("wallLevel") ? PlayerPrefs.GetInt("wallLevel") : 1;
         floorLevel = PlayerPrefs.HasKey("floorLevel") ? PlayerPrefs.GetInt("floorLevel") : 1;
         tableLevel = PlayerPrefs.HasKey("tableLevel") ? PlayerPrefs.GetInt("tableLevel") : 1;
@@ -202,30 +320,28 @@ public class GameManager : MonoBehaviour
     }
     public void PlaySound(soundTypes sType)
     {
-        soundIns = Instantiate(sound).GetComponent<AudioSource>();
-        Destroy(soundIns.gameObject, 1);
+        //Destroy(soundIns.gameObject, 1);
         switch (sType)
         {
             case soundTypes.pop:
-                soundIns.pitch = popPitch;
-                popPitch += 0.02f;
-                soundIns.clip = audioClips[0];
+                Transform temp = Instantiate(audioClips[0]);
+                temp.GetComponent<AudioSource>().pitch = popPitch;
+                popPitch += 0.05f;
                 break;
             case soundTypes.upgrade:
-                soundIns.clip = audioClips[1];
+                Instantiate(audioClips[1]);
                 break;
             case soundTypes.money:
-                soundIns.clip = audioClips[2];
+                Instantiate(audioClips[2]);
                 break;
             case soundTypes.coins:
-                soundIns.clip = audioClips[0];
-                soundIns.pitch = 0.8f;
+                Instantiate(audioClips[0]);
                 break;
             case soundTypes.tap:
-                soundIns.clip = audioClips[3];
+                Instantiate(audioClips[3]);
                 break;
             case soundTypes.win:
-                soundIns.clip = audioClips[4];
+                Instantiate(audioClips[4]);
                 break;
         }
     }
@@ -418,7 +534,7 @@ public class GameManager : MonoBehaviour
         temp.DOMoveY(dropHeight, 0.5f).SetEase(Ease.Linear);
         temp.parent = breadBase;
 
-        if(touchCount > targetTouchCount - 1)
+        if (touchCount > targetTouchCount - 1)
         {
             switch (ingredientType)
             {
@@ -459,8 +575,127 @@ public class GameManager : MonoBehaviour
                 cam.transform.DOMove(camPositions.GetChild(2).position, 0.5f).SetEase(Ease.Linear).SetId(camTween);
                 cam.transform.DORotate(camPositions.GetChild(2).eulerAngles, 0.5f).SetEase(Ease.Linear).SetId(camTween).OnComplete(() => ingredientSelection.SetActive(true));
             }
-            if (ingredientLayers.Count > levels[currentLevel].ingredients.Count - 1)
+            if (ingredientLayers.Count > currentOrder.ingredients.Count - 1)
                 nextButton.SetActive(true);
+        }
+    }
+
+    public IEnumerator makeSample()
+    {
+        orderCash = 150 + (level * 50);
+        orderPanel.SetActive(true);
+        orderCashTxt.text = GetValue(orderCash);
+        sampleCam.GetComponent<Camera>().orthographicSize = 0.6f;
+        float sampleHeight = 0, heightAdder = 0;
+        int nodes = 1;
+        List<Transform> sampleLayers = new List<Transform>();
+        Transform temp = null, tempParent = null;
+        yield return new WaitForSeconds(0.5f);
+
+        Instantiate(breadBottom, new Vector3(0, -0.1f, 10), Quaternion.identity);
+
+        for (int i = 0; i < currentOrder.ingredients.Count; i++)
+        {
+            yield return new WaitForSeconds(0.25f);
+
+            switch (currentOrder.ingredients[i])
+            {
+                case Ingredients.patty:
+                    temp = patty;
+                    sampleHeight += 0.02f;
+                    heightAdder = 0.05f;
+                    break;
+
+                case Ingredients.grillPatty:
+                    temp = grillPatty;
+                    sampleHeight += 0.02f;
+                    heightAdder = 0.05f;
+                    break;
+
+                case Ingredients.ham:
+                    temp = ham;
+                    sampleHeight += 0.01f;
+                    heightAdder = 0.01f;
+                    break;
+
+                case Ingredients.cheese:
+                    temp = cheese;
+                    nodes = 0;
+                    sampleHeight += 0.01f;
+                    heightAdder = 0.02f;
+                    break;
+
+                case Ingredients.lettuce:
+                    temp = lettuce;
+                    sampleHeight += 0.01f;
+                    heightAdder = 0.01f;
+                    break;
+
+                case Ingredients.tomato:
+                    temp = tomato;
+                    nodes = 2;
+                    sampleHeight += 0.01f;
+                    heightAdder = 0.02f;
+                    break;
+
+                case Ingredients.cucumber:
+                    temp = cucumber;
+                    nodes = 2;
+                    sampleHeight += 0.01f;
+                    heightAdder = 0.02f;
+                    break;
+            }
+            for (int j = 0; j < rows.GetChild(nodes).childCount; j++)
+            {
+                yield return new WaitForSeconds(0.05f);
+
+                if(j==0)
+                {
+                    tempParent = Instantiate(temp, new Vector3(rows.GetChild(nodes).GetChild(j).position.x, sampleHeight, 10), temp.rotation);
+                    sampleLayers.Add(tempParent);
+                }
+                else
+                    Instantiate(temp, new Vector3(rows.GetChild(nodes).GetChild(j).position.x, sampleHeight, 10), temp.rotation, tempParent);
+            }
+            temp.parent = breadBase;
+            sampleHeight += heightAdder;
+        }
+        yield return new WaitForSeconds(0.25f);
+
+        switch (currentOrder.breads)
+        {
+            case Breads.italian:
+                sampleLayers.Add(Instantiate(italianBread, new Vector3(0, sampleHeight, 10), Quaternion.identity));
+                break;
+            case Breads.sesame:
+                sampleLayers.Add(Instantiate(sesameBread, new Vector3(0, sampleHeight, 10), Quaternion.identity));
+                break;
+            case Breads.grill:
+                sampleLayers.Add(Instantiate(GrillBread, new Vector3(0, sampleHeight, 10), Quaternion.identity));
+                break;
+            case Breads.oats:
+                sampleLayers.Add(Instantiate(oatsBread, new Vector3(0, sampleHeight, 10), Quaternion.identity));
+                break;
+        }
+
+        DOTween.Kill(camTween);
+        cam.transform.DOMove(camPositions.GetChild(4).position, 0.5f).SetEase(Ease.Linear).SetId(camTween);
+        cam.transform.DORotate(camPositions.GetChild(4).eulerAngles, 0.5f).SetEase(Ease.Linear).SetId(camTween).OnComplete(() => breadSelection.SetActive(true));
+
+        sampleCam.DOMove(new Vector3(0, 1, 9), 0.5f).SetDelay(0.25f).SetEase(Ease.Linear);
+        sampleCam.DORotate(new Vector3(25, 0, 0), 0.5f).SetDelay(0.25f).SetEase(Ease.Linear);
+
+        yield return new WaitForSeconds(0.25f);
+
+        for (int i = 0; i < sampleLayers.Count; i++)
+        {
+            yield return new WaitForSeconds(0.1f);
+
+            for (int j = i; j < sampleLayers.Count; j++)
+            {
+
+                sampleLayers[j].DOMoveZ(10 + (i * 0.2f), 0.2f).SetEase(Ease.Linear);
+            }
         }
     }
 }

@@ -18,8 +18,8 @@ public class CoinMagnet : MonoBehaviour
         for (int i = 0; i < size; i++)
         {
             Transform temp = Instantiate(coinObj, parent);
-            temp.DOLocalMove(new Vector3(Random.Range(-100, 100), Random.Range(-100, 100), 0), 0.2f).From(Vector3.zero).SetEase(Ease.Linear);
-            temp.DOLocalMove(targetCoin.localPosition, Random.Range(0.5f, 0.7f)).SetDelay(Random.Range(0.2f, 0.4f)).SetEase(Ease.Linear).OnComplete(()=>
+            temp.DOLocalMove(new Vector3(Random.Range(-100, 100), Random.Range(-100, 100), 0), 0.5f).From(Vector3.zero).SetEase(Ease.Linear);
+            temp.DOLocalMove(targetCoin.localPosition, Random.Range(0.5f, 0.7f)).SetDelay(Random.Range(0.7f, 1f)).SetEase(Ease.Linear).OnComplete(()=>
             {
                 gManager.PlaySound(GameManager.soundTypes.coins);
                 Destroy(temp.gameObject);

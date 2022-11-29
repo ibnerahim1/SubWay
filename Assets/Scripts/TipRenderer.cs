@@ -24,7 +24,17 @@ public class TipRenderer : MonoBehaviour
     }
     private void OnMouseEnter()
     {
-        if(active)
+        if(active && !PlayerPrefs.HasKey("tap"))
+        {
+            active = false;
+            DOTween.Kill(transform.GetHashCode());
+            material.DOFade(0, 0);
+            gManager.Touched(transform.position);
+        }
+    }
+    private void OnMouseDown()
+    {
+        if (active && PlayerPrefs.HasKey("tap"))
         {
             active = false;
             DOTween.Kill(transform.GetHashCode());

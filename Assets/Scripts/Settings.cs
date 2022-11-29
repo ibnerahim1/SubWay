@@ -8,15 +8,19 @@ public class Settings : MonoBehaviour
     [SerializeField] GameObject settingsPanel, musicImg, hapticImg;
     [SerializeField] AudioListener audioListener;
 
+    private GameManager gManager;
     private int music, haptic;
 
     void Start()
     {
+        gManager = FindObjectOfType<GameManager>();
         InitialiseSettings();
     }
 
     public void ToggleSettings(bool condition)
     {
+        gManager.PlaySound(GameManager.soundTypes.tap);
+
         if (condition)
         {
             settingsPanel.SetActive(true);
@@ -29,6 +33,8 @@ public class Settings : MonoBehaviour
     }
     public void ToggleMusic()
     {
+        gManager.PlaySound(GameManager.soundTypes.tap);
+
         music = music == 0 ? 1 : 0;
         PlayerPrefs.SetInt("music", music);
         musicImg.SetActive(music == 0);
@@ -37,6 +43,8 @@ public class Settings : MonoBehaviour
     }
     public void ToggleHaptic()
     {
+        gManager.PlaySound(GameManager.soundTypes.tap);
+
         haptic = haptic == 0 ? 1 : 0;
         PlayerPrefs.SetInt("haptic", haptic);
         hapticImg.SetActive(haptic == 0);

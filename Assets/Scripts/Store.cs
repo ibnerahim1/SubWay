@@ -30,6 +30,8 @@ public class Store : MonoBehaviour
     }
     public void Upgrade(string val)
     {
+        gManager.PlaySound(GameManager.soundTypes.upgrade);
+
         switch (val)
         {
             case "wall":
