@@ -210,20 +210,14 @@ public class GameManager : MonoBehaviour
                 break;
             case 1:
                 customer.anim.Play("talk");
-                stars[0].SetActive(true);
                 orderCash = (int)(orderCash * 1.1f);
                 break;
             case 2:
                 customer.anim.Play("happy");
-                stars[0].SetActive(true);
-                stars[1].SetActive(true);
                 orderCash = (int)(orderCash * 1.2f);
                 break;
             case 3:
                 customer.anim.Play("jump");
-                stars[0].SetActive(true);
-                stars[1].SetActive(true);
-                stars[2].SetActive(true);
                 orderCash = (int)(orderCash * 1.3f);
                 break;
         }
