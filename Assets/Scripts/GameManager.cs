@@ -16,7 +16,7 @@ public class GameManager : MonoBehaviour
     public Transform[] audioClips;
 
     [SerializeField] Transform cashObj, progressBar, camPositions, rows, ingredientContainer, sampleCam;
-    [SerializeField] GameObject failPanel, winPanel, menuPanel, gamePanel, storePanel, cashPanel, whiteScreen, nextButton, breadSelection, ingredientSelection, tray, orderPanel;
+    [SerializeField] GameObject failPanel, winPanel, menuPanel, gamePanel, storePanel, cashPanel, whiteScreen, nextButton, breadSelection, ingredientSelection, tray, orderPanel, sampleButton, sampleFullButton;
     [SerializeField] TextMeshProUGUI dayTxt, cashTxt, orderCashTxt;
     [SerializeField] Customer customer;
     [SerializeField] GameObject[] stars;
@@ -691,6 +691,20 @@ public class GameManager : MonoBehaviour
                 sampleLayers[j].DOMoveZ(10 + (i * 0.2f), 0.2f).SetEase(Ease.Linear);
             }
         }
+    }
+    public void SampleFullScreen(bool condn)
+    {
+        if (condn)
+        {
+            sampleButton.SetActive(false);
+            sampleFullButton.SetActive(true);
+        }
+        else
+        {
+            sampleButton.SetActive(true);
+            sampleFullButton.SetActive(false);
+        }
+
     }
 }
 [System.Serializable]
