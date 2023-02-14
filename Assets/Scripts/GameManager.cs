@@ -6,36 +6,48 @@ using TMPro;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using MoreMountains.NiceVibrations;
+using Dreamteck.Splines;
 
 public class GameManager : MonoBehaviour
 {
     public enum hapticTypes {soft, light, medium, heavy, success, failure};
     public enum soundTypes { pop, upgrade, money, coins, tap, win};
-    public Transform walls, floors, tables, breadBottom, italianBread, sesameBread, GrillBread, oatsBread, patty, grillPatty, ham, cheese, lettuce, tomato, cucumber;
+    public Transform walls, floors, tables, breadBottom, italianBread, sesameBread, GrillBread, oatsBread, patty, grillPatty, ham, cheese, lettuce, tomato, cucumber, sauceBottle, knife, paper, ovenDoor;
     public Level[] levels;
     public Transform[] audioClips;
+    public Image bakeFill;
 
-    [SerializeField] Transform cashObj, progressBar, camPositions, rows, ingredientContainer, sampleCam;
-    [SerializeField] GameObject failPanel, winPanel, menuPanel, gamePanel, storePanel, cashPanel, whiteScreen, nextButton, breadSelection, ingredientSelection, tray, orderPanel, sampleButton, sampleFullButton;
+    [SerializeField] Transform[] saucesObj;
+    [SerializeField] Transform cashObj, progressBar, camPositions, rows, ingredientContainer, sauceContainer, sampleCam;
+    [SerializeField] GameObject failPanel, winPanel, menuPanel, gamePanel, storePanel, cashPanel, whiteScreen, nextButton, breadSelection, ingredientSelection, sauceSelection, cheeseNToastPrompt, tray, orderPanel, sampleButton, sampleFullButton, cutTut, squeezeTut;
     [SerializeField] TextMeshProUGUI dayTxt, cashTxt, orderCashTxt;
     [SerializeField] Customer customer;
     [SerializeField] GameObject[] stars;
 
     [HideInInspector] public bool gameStarted;
     [HideInInspector] public int level, currentLevel, wallLevel, floorLevel, tableLevel, cash, orderCash, touchCount;
+    [HideInInspector] public enum Step { acceptOrder, chooseBread, cheeseNtoast, ingredients, sauces, done};
+    [HideInInspector] Step steps;
     [HideInInspector] public enum Breads {italian, sesame, grill, oats};
     [HideInInspector] Breads breadType;
     [HideInInspector] public enum Ingredients { patty, grillPatty, ham, cheese, lettuce, tomato, cucumber};
     [HideInInspector] Ingredients ingredientType;
+    [HideInInspector] public enum Sauce { chilli, mayo, mustard};
+    [HideInInspector] Sauce sauceType;
+    [HideInInspector] bool cheeseNtoast;
 
     private List<Ingredients> ingredientLayers = new List<Ingredients>();
+    private List<Sauce> sauces = new List<Sauce>();
     private Transform bread, breadBase, ingredient;
     private const int camTween = 0;
     private Camera cam;
     private Ingredients prevIngredient;
-    private int targetTouchCount;
-    private float dropHeight = 1.1f, popPitch = 0.5f, matchPercentage;
+    private int targetTouchCount, sauceCount;
+    private float dropHeight = 1.1f, popPitch = 0.5f, matchPercentage, squeezeVal;
     private Level currentOrder = new Level();
+    private TubeGenerator currentSauce;
+    private SplinePositioner bottlePosition;
+    public bool cut, squeeze, sauceadded;
 
     private void Awake()
     {
@@ -46,6 +58,7 @@ public class GameManager : MonoBehaviour
         cam = Camera.main;
         level = PlayerPrefs.HasKey("level") ? PlayerPrefs.GetInt("level") : 1;
         dayTxt.text = "DAY " + (((level - 1)/ 5) + 1);
+        bottlePosition = sauceBottle.GetComponent<SplinePositioner>();
 
         if ((level - 1) < levels.Length)
             currentOrder = levels[level - 1];
@@ -66,7 +79,11 @@ public class GameManager : MonoBehaviour
                     currentOrder.breads = Breads.oats;
                     break;
             }
-            for (int i = 0; i < 7; i++)
+            currentOrder.cheeseNtoast = Random.Range(0, 3) > 0;
+            if(currentOrder.cheeseNtoast)
+                currentOrder.ingredients.Add(Ingredients.cheese);
+
+            for (int i = 0; i < 6; i++)
             {
                 switch (i)
                 {
@@ -84,19 +101,33 @@ public class GameManager : MonoBehaviour
                         break;
                     case 3:
                         if (Random.Range(0, 3) > 0)
-                            currentOrder.ingredients.Add(Ingredients.cheese);
+                            currentOrder.ingredients.Add(Ingredients.lettuce);
                         break;
                     case 4:
                         if (Random.Range(0, 3) > 0)
-                            currentOrder.ingredients.Add(Ingredients.lettuce);
+                            currentOrder.ingredients.Add(Ingredients.tomato);
                         break;
                     case 5:
                         if (Random.Range(0, 3) > 0)
-                            currentOrder.ingredients.Add(Ingredients.tomato);
-                        break;
-                    case 6:
-                        if (Random.Range(0, 3) > 0)
                             currentOrder.ingredients.Add(Ingredients.cucumber);
+                        break;
+                }
+            }
+            for (int i = 0; i < 3; i++)
+            {
+                switch (i)
+                {
+                    case 0:
+                        if (Random.Range(0, 3) > 0)
+                            currentOrder.sauces.Add(Sauce.chilli);
+                        break;
+                    case 1:
+                        if (Random.Range(0, 3) > 0)
+                            currentOrder.sauces.Add(Sauce.mayo);
+                        break;
+                    case 2:
+                        if (Random.Range(0, 3) > 0)
+                            currentOrder.sauces.Add(Sauce.mustard);
                         break;
                 }
             }
@@ -136,6 +167,63 @@ public class GameManager : MonoBehaviour
         cashTxt.text = GetValue(cash);
         if (popPitch > 0.5f)
             popPitch = Mathf.Lerp(popPitch, 0.5f, Time.deltaTime);
+
+        if (Input.GetMouseButtonDown(0))
+        {
+            if (cut)
+            {
+                knife.DOMoveX(-0.6f, Mathf.Abs(knife.position.x + 0.6f) * 2).SetEase(Ease.Linear).SetId(2).OnComplete(()=>
+                {
+                    cut = false;
+                    cutTut.SetActive(false);
+                    DOTween.Kill(2);
+                    knife.DOMove(new Vector3(-3, 1.05f, -2), 1).SetEase(Ease.Linear).OnComplete(()=> knife.gameObject.SetActive(false));
+
+                    breadBase.DOMove(new Vector3(0, 1, -0.25f), 0.5f).SetEase(Ease.Linear).SetDelay(0.5f);
+                    bread.DOJump(new Vector3(0, 1.2f, 0.25f), 0.3f, 1, 1).SetEase(Ease.Linear).SetDelay(0.5f);
+                    bread.DORotate(new Vector3(180, 0, 0), 1).SetEase(Ease.Linear).SetDelay(0.5f).OnComplete(() =>
+                    {
+                        cheeseNToastPrompt.SetActive(true);
+                        //ingredientSelection.SetActive(true);
+                        //DOTween.Kill(camTween);
+                        //cam.transform.DOMove(camPositions.GetChild(2).position, 0.5f).SetEase(Ease.Linear).SetId(camTween);
+                        //cam.transform.DORotate(camPositions.GetChild(2).eulerAngles, 0.5f).SetEase(Ease.Linear).SetId(camTween);
+                    });
+
+                });
+                knife.DOMoveZ(-0.2f, 0.2f).SetEase(Ease.Linear).SetLoops(-1, LoopType.Yoyo).SetId(2);
+            }
+            if (squeeze)
+            {
+                DOTween.To(() => squeezeVal, x => squeezeVal = x, 1, 1 - squeezeVal).SetId(3).SetEase(Ease.Linear).OnComplete(()=>
+                {
+                    if (sauceCount < 3)
+                        sauceSelection.SetActive(true);
+                    squeeze = false;
+                    squeezeTut.SetActive(false);
+                    nextButton.SetActive(true);
+                    bottlePosition.spline = null;
+                    bottlePosition.enabled = false;
+                    sauceBottle.gameObject.SetActive(false);
+                });
+            }
+        }
+        if (Input.GetMouseButtonUp(0))
+        {
+            if (cut)
+            {
+                DOTween.Kill(2);
+            }
+            if (squeeze)
+            {
+                DOTween.Kill(3);
+            }
+        }
+        if (squeeze)
+        {
+            bottlePosition.SetPercent(squeezeVal);
+            currentSauce.SetClipRange(0, squeezeVal);
+        }
     }
     public void PlayLevel()
     {
@@ -152,27 +240,65 @@ public class GameManager : MonoBehaviour
     }
     public void Next()
     {
-        PlaySound(soundTypes.win);
-
-        nextButton.SetActive(false);
-        cam.transform.GetChild(0).gameObject.SetActive(true);
-        ingredientSelection.SetActive(false);
-        breadBase.DOMove(new Vector3(0, 1, 0), 0.5f).SetEase(Ease.Linear).SetDelay(0.5f);
-        bread.DOJump(new Vector3(0, dropHeight, 0), dropHeight + 0.3f, 1, 1).SetEase(Ease.Linear);
-        bread.DORotate(new Vector3(360, 0, 0), 1).SetEase(Ease.Linear).OnComplete(() =>
+        if (sauceadded)
         {
+            PlaySound(soundTypes.win);
 
-            cashPanel.SetActive(true);
-            gamePanel.SetActive(false);
-            bread.parent = breadBase;
-            breadBase.DOJump(breadBase.position, 0.2f, 1, 0.5f).SetEase(Ease.Linear).SetDelay(0.5f);
-            tray.SetActive(true);
 
-            DOTween.Kill(camTween);
-            cam.transform.DOMove(camPositions.GetChild(4).position, 0.5f).SetEase(Ease.Linear).SetId(camTween);
-            cam.transform.DORotate(camPositions.GetChild(4).eulerAngles, 0.5f).SetEase(Ease.Linear).SetId(camTween);
-            StartCoroutine(LevelComplete());
-        });
+            nextButton.SetActive(false);
+            cam.transform.GetChild(0).gameObject.SetActive(true);
+            sauceSelection.SetActive(false);
+            breadBase.DOMove(new Vector3(0, 1, 0), 0.5f).SetEase(Ease.Linear).SetDelay(0.5f);
+            bread.parent = null;
+            breadBase.parent = null;
+            bread.DOJump(new Vector3(0, dropHeight, 0), dropHeight + 0.3f, 1, 1).SetEase(Ease.Linear);
+            bread.DORotate(new Vector3(360, 0, 0), 1).SetEase(Ease.Linear).OnComplete(() =>
+            {
+
+                cashPanel.SetActive(true);
+                gamePanel.SetActive(false);
+                bread.parent = breadBase;
+                breadBase.DOJump(breadBase.position, 0.2f, 1, 0.5f).SetEase(Ease.Linear).SetDelay(0.5f);
+                paper.DOMoveZ(-3, 0.2f).SetEase(Ease.Linear);
+                tray.SetActive(true);
+
+                DOTween.Kill(camTween);
+                cam.transform.DOMove(camPositions.GetChild(4).position, 0.5f).SetEase(Ease.Linear).SetId(camTween);
+                cam.transform.DORotate(camPositions.GetChild(4).eulerAngles, 0.5f).SetEase(Ease.Linear).SetId(camTween);
+                StartCoroutine(LevelComplete());
+            });
+        }
+        else
+        {
+            sauceadded = true;
+            ingredientSelection.SetActive(false);
+            sauceSelection.SetActive(true);
+        }
+    }
+
+    public void StepAppend()
+    {
+        switch (steps)
+        {
+            case Step.acceptOrder:
+
+            break;
+            case Step.chooseBread:
+
+            break;
+            case Step.cheeseNtoast:
+
+            break;
+            case Step.ingredients:
+
+            break;
+            case Step.sauces:
+
+            break;
+            case Step.done:
+
+            break;
+        }
     }
 
     IEnumerator LevelComplete()
@@ -195,6 +321,8 @@ public class GameManager : MonoBehaviour
         if (breadType == currentOrder.breads)
             MatchCount++;
         if(ingredientLayers.Count == currentOrder.ingredients.Count)
+            MatchCount++;
+        if (sauces.Count == currentOrder.sauces.Count)
             MatchCount++;
 
         yield return new WaitForSeconds(0.5f);
@@ -422,19 +550,15 @@ public class GameManager : MonoBehaviour
         cam.transform.DOMove(camPositions.GetChild(1).position, 0.5f).SetEase(Ease.Linear).SetId(camTween);
         cam.transform.DORotate(camPositions.GetChild(1).eulerAngles, 0.5f).SetEase(Ease.Linear).SetId(camTween);
 
+        paper.gameObject.SetActive(true);
+        paper.DOMove(new Vector3(0, 1.01f, 0), 0.3f).SetEase(Ease.Linear);
         breadBase = Instantiate(breadBottom, new Vector3(0, 1.4f, 0), Quaternion.identity);
         breadBase.DOMove(new Vector3(0, 1, 0), 0.5f).SetEase(Ease.Linear);
         bread.DOMove(new Vector3(0, 1.1f, 0), 0.5f).SetEase(Ease.Linear);
 
-        breadBase.DOMove(new Vector3(0, 1, -0.25f), 0.5f).SetEase(Ease.Linear).SetDelay(0.5f);
-        bread.DOJump(new Vector3(0, 1.2f, 0.25f), 0.3f, 1, 1).SetEase(Ease.Linear).SetDelay(0.5f);
-        bread.DORotate(new Vector3(180, 0, 0), 1).SetEase(Ease.Linear).SetDelay(0.5f).OnComplete(()=>
-        {
-            ingredientSelection.SetActive(true);
-            DOTween.Kill(camTween);
-            cam.transform.DOMove(camPositions.GetChild(2).position, 0.5f).SetEase(Ease.Linear).SetId(camTween);
-            cam.transform.DORotate(camPositions.GetChild(2).eulerAngles, 0.5f).SetEase(Ease.Linear).SetId(camTween);
-        });
+        cutTut.SetActive(true);
+        knife.gameObject.SetActive(true);
+        knife.DOMove(new Vector3(0.6f, 1.1f, -0.5f), 0.5f).From(new Vector3(3, 1.1f, -2)).SetEase(Ease.Linear).OnComplete(() => cut = true);
     }
     public void SelectIngredient(string name)
     {
@@ -478,6 +602,7 @@ public class GameManager : MonoBehaviour
                 dropHeight += 0.01f;
                 ingredient = cheese;
                 InitialiseSpheres(0);
+                cheeseNToastPrompt.SetActive(false);
                 break;
 
             case "lettuce":
@@ -508,9 +633,110 @@ public class GameManager : MonoBehaviour
                 break;
         }
         ingredientSelection.SetActive(false);
+        //DOTween.Kill(camTween);
+        //cam.transform.DOMove(camPositions.GetChild(1).position, 0.5f).SetEase(Ease.Linear).SetId(camTween);
+        //cam.transform.DORotate(camPositions.GetChild(1).eulerAngles, 0.5f).SetEase(Ease.Linear).SetId(camTween);
+    }
+    public void SauceSelect(string name)
+    {
+        PlaySound(soundTypes.tap);
+
+        nextButton.SetActive(false);
+        sauceCount++;
+        squeezeTut.SetActive(true);
+        switch (name)
+        {
+            case "chilli":
+                sauceContainer.GetChild(0).GetComponent<Button>().interactable = false;
+                sauceType = Sauce.chilli;
+                sauces.Add(Sauce.chilli);
+                currentSauce = Instantiate(saucesObj[0], new Vector3(breadBase.position.x, dropHeight - 0.1f, breadBase.position.z), Quaternion.identity).GetComponent<TubeGenerator>();
+                currentSauce.transform.parent = breadBase;
+                sauceBottle.gameObject.SetActive(true);
+                sauceBottle.GetComponent<MeshRenderer>().material.color = Color.red;
+                sauceBottle.DOMove(currentSauce.transform.position + Vector3.right * -0.5f, 0.5f).From(new Vector3(-3, 1, 0)).SetEase(Ease.Linear).OnComplete(() =>
+                {
+                    bottlePosition.spline = currentSauce.GetComponent<SplineComputer>();
+                    bottlePosition.enabled = true;
+                    squeeze = true;
+                    squeezeVal = 0;
+                    currentSauce.gameObject.SetActive(true);
+                });
+
+                break;
+
+            case "mayo":
+                sauceContainer.GetChild(1).GetComponent<Button>().interactable = false;
+                sauceType = Sauce.mayo;
+                sauces.Add(Sauce.mayo);
+                currentSauce = Instantiate(saucesObj[1], new Vector3(breadBase.position.x, dropHeight - 0.1f, breadBase.position.z + 0.1f), Quaternion.identity).GetComponent<TubeGenerator>();
+                currentSauce.transform.parent = breadBase;
+                sauceBottle.gameObject.SetActive(true);
+                sauceBottle.GetComponent<MeshRenderer>().material.color = Color.white;
+                sauceBottle.DOMove(currentSauce.transform.position + Vector3.right * -0.5f, 0.5f).From(new Vector3(-3, 1, 0)).SetEase(Ease.Linear).OnComplete(() =>
+                {
+                    bottlePosition.spline = currentSauce.GetComponent<SplineComputer>();
+                    bottlePosition.enabled = true;
+                    squeeze = true;
+                    squeezeVal = 0;
+                    currentSauce.gameObject.SetActive(true);
+                });
+                break;
+
+            case "mustard":
+                sauceContainer.GetChild(2).GetComponent<Button>().interactable = false;
+                sauceType = Sauce.mustard;
+                sauces.Add(Sauce.mustard);
+                currentSauce = Instantiate(saucesObj[2], new Vector3(breadBase.position.x, dropHeight - 0.1f, breadBase.position.z - 0.1f), Quaternion.identity).GetComponent<TubeGenerator>();
+                currentSauce.transform.parent = breadBase;
+                sauceBottle.gameObject.SetActive(true);
+                sauceBottle.GetComponent<MeshRenderer>().material.color = Color.yellow;
+                sauceBottle.DOMove(currentSauce.transform.position + Vector3.right * -0.5f, 0.5f).From(new Vector3(-3, 1, 0)).SetEase(Ease.Linear).OnComplete(() =>
+                {
+                    bottlePosition.spline = currentSauce.GetComponent<SplineComputer>();
+                    bottlePosition.enabled = true;
+                    squeeze = true;
+                    squeezeVal = 0;
+                    currentSauce.gameObject.SetActive(true);
+                });
+                break;
+        }
+        sauceSelection.SetActive(false);
+        //DOTween.Kill(camTween);
+        //cam.transform.DOMove(camPositions.GetChild(1).position, 0.5f).SetEase(Ease.Linear).SetId(camTween);
+        //cam.transform.DORotate(camPositions.GetChild(1).eulerAngles, 0.5f).SetEase(Ease.Linear).SetId(camTween);
+    }
+    public void Toast()
+    {
+        breadBase.parent = paper;
+        bread.parent = paper;
         DOTween.Kill(camTween);
-        cam.transform.DOMove(camPositions.GetChild(1).position, 0.5f).SetEase(Ease.Linear).SetId(camTween);
-        cam.transform.DORotate(camPositions.GetChild(1).eulerAngles, 0.5f).SetEase(Ease.Linear).SetId(camTween);
+        cam.transform.DOMove(camPositions.GetChild(6).position, 0.5f).SetEase(Ease.Linear).SetId(camTween);
+        cam.transform.DORotate(camPositions.GetChild(6).eulerAngles, 0.5f).SetEase(Ease.Linear).SetId(camTween).OnComplete(() =>
+        {
+            ovenDoor.DOLocalRotate(new Vector3(90, 0, 0), 0.5f).SetEase(Ease.Linear);
+            paper.DOMoveY(2, 0.3f).SetEase(Ease.Linear);
+            paper.DOMove(new Vector3(-4.3f, 2.1f, 0), 0.3f).SetDelay(0.5f).SetEase(Ease.Linear);
+            paper.DORotate(new Vector3(0, -90, 0), 0.3f).SetEase(Ease.Linear);
+            ovenDoor.DOLocalRotate(new Vector3(0, 0, 0), 0.5f).SetDelay(1).SetEase(Ease.Linear);
+            bakeFill.DOFillAmount(1, 2).SetEase(Ease.Linear).SetDelay(1.5f).OnComplete(()=>
+            {
+                ovenDoor.DOLocalRotate(new Vector3(90, 0, 0), 0.5f).SetEase(Ease.Linear);
+                paper.DORotate(new Vector3(0, 0, 0), 0.3f).SetDelay(0.6f).SetEase(Ease.Linear);
+                paper.DOMoveY(1.01f, 0.3f).SetDelay(1f).SetEase(Ease.Linear);
+                paper.DOMove(new Vector3(0, 2, 0), 0.5f).SetDelay(0.5f).SetEase(Ease.Linear).OnComplete(()=>
+                {
+                    DOTween.Kill(camTween);
+                    cam.transform.DOMove(camPositions.GetChild(1).position, 0.5f).SetEase(Ease.Linear).SetId(camTween);
+                    cam.transform.DORotate(camPositions.GetChild(1).eulerAngles, 0.5f).SetEase(Ease.Linear).SetId(camTween).OnComplete(() => ingredientSelection.SetActive(true));
+                });
+            });
+        });
+    }
+    public void SkipCheeseNtoast()
+    {
+        cheeseNToastPrompt.SetActive(false);
+        ingredientSelection.SetActive(true);
     }
     private void InitialiseSpheres(int child)
     {
@@ -561,16 +787,24 @@ public class GameManager : MonoBehaviour
                     break;
             }
             ingredientLayers.Add(ingredientType);
-            if (ingredientLayers.Count > ingredientContainer.childCount - 1)
-                Next();
+            if(ingredientType == Ingredients.cheese)
+            {
+                Toast();
+            }
             else
             {
-                DOTween.Kill(camTween);
-                cam.transform.DOMove(camPositions.GetChild(2).position, 0.5f).SetEase(Ease.Linear).SetId(camTween);
-                cam.transform.DORotate(camPositions.GetChild(2).eulerAngles, 0.5f).SetEase(Ease.Linear).SetId(camTween).OnComplete(() => ingredientSelection.SetActive(true));
+                if (ingredientLayers.Count > ingredientContainer.childCount - 1)
+                    Next();
+                else
+                {
+                    ingredientSelection.SetActive(true);
+                    //DOTween.Kill(camTween);
+                    //cam.transform.DOMove(camPositions.GetChild(2).position, 0.5f).SetEase(Ease.Linear).SetId(camTween);
+                    //cam.transform.DORotate(camPositions.GetChild(2).eulerAngles, 0.5f).SetEase(Ease.Linear).SetId(camTween).OnComplete(() => ingredientSelection.SetActive(true));
+                }
+                if (ingredientLayers.Count > currentOrder.ingredients.Count - 1)
+                    nextButton.SetActive(true);
             }
-            if (ingredientLayers.Count > currentOrder.ingredients.Count - 1)
-                nextButton.SetActive(true);
         }
     }
 
@@ -651,7 +885,7 @@ public class GameManager : MonoBehaviour
                 else
                     Instantiate(temp, new Vector3(rows.GetChild(nodes).GetChild(j).position.x, sampleHeight, 10), temp.rotation, tempParent);
             }
-            temp.parent = breadBase;
+            //temp.parent = breadBase;
             sampleHeight += heightAdder;
         }
         yield return new WaitForSeconds(0.25f);
@@ -711,5 +945,7 @@ public class GameManager : MonoBehaviour
 public class Level
 {
     public GameManager.Breads breads;
+    public bool cheeseNtoast;
     public List<GameManager.Ingredients> ingredients = new List<GameManager.Ingredients>();
+    public List<GameManager.Sauce> sauces = new List<GameManager.Sauce>();
 }
