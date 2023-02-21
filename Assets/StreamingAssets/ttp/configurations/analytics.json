@@ -1,0 +1,12 @@
+{
+  "included": true,
+  "firebase": {
+    "googleAppId": "1:354335664855:ios:7fb49729fff869723d1e92",
+    "apiKey": "AIzaSyAEnrivuLI0qyZCHf2_nnT6tlJPlMm4wd0",
+    "projectId": "cl-clikcpi",
+    "clientId": "354335664855-odugf5c3nhmitripc2rr2it5iavq3uv3.apps.googleusercontent.com",
+    "senderId": "354335664855",
+    "storageBucket": "cl-clikcpi.appspot.com",
+    "databaseURL": ""
+  }
+}
