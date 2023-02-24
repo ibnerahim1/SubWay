@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.tabtale.tt_plugins.android</groupId>
   <artifactId>TT_Plugins</artifactId>
-  <version>4.0.0.3.1</version>
+  <version>4.0.0.4.2</version>
   <packaging>pom</packaging>
   <dependencies>
     <dependency>
@@ -93,11 +93,6 @@
     </dependency>
     <dependency>
       <groupId>com.tabtale.tt_plugins.android</groupId>
-      <artifactId>TT_Plugins_Unity</artifactId>
-      <version>3.8.0.0.1</version>
-    </dependency>
-    <dependency>
-      <groupId>com.tabtale.tt_plugins.android</groupId>
       <artifactId>TT_Plugins_Banners_MoPub</artifactId>
       <version>4.0.0.2.3</version>
     </dependency>
@@ -105,6 +100,11 @@
       <groupId>com.tabtale.tt_plugins.android</groupId>
       <artifactId>TT_Plugins_Banners_Admob</artifactId>
       <version>4.0.0.2.3</version>
+    </dependency>
+    <dependency>
+      <groupId>com.tabtale.tt_plugins.android</groupId>
+      <artifactId>TT_Plugins_Unity</artifactId>
+      <version>3.8.0.0.1</version>
     </dependency>
     <dependency>
       <groupId>com.tabtale.tt_plugins.android</groupId>
@@ -149,7 +149,7 @@
     <dependency>
       <groupId>com.tabtale.tt_plugins.android</groupId>
       <artifactId>TT_Plugins_Core</artifactId>
-      <version>4.0.0.3.1</version>
+      <version>4.0.0.4.2</version>
     </dependency>
   </dependencies>
 </project>

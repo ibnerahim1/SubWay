@@ -5,8 +5,9 @@ using DG.Tweening;
 using TMPro;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using MoreMountains.NiceVibrations;
+//using MoreMountains.NiceVibrations;
 using Dreamteck.Splines;
+using Tabtale.TTPlugins;
 
 public class GameManager : MonoBehaviour
 {
@@ -51,6 +52,7 @@ public class GameManager : MonoBehaviour
 
     private void Awake()
     {
+        TTPCore.Setup();
         LoadData();
     }
     private void Start()
@@ -421,22 +423,22 @@ public class GameManager : MonoBehaviour
         switch (hType)
         {
             case hapticTypes.soft:
-                MMVibrationManager.Haptic(HapticTypes.SoftImpact);
+                //MMVibrationManager.Haptic(HapticTypes.SoftImpact);
                 break;
             case hapticTypes.light:
-                MMVibrationManager.Haptic(HapticTypes.LightImpact);
+                //MMVibrationManager.Haptic(HapticTypes.LightImpact);
                 break;
             case hapticTypes.medium:
-                MMVibrationManager.Haptic(HapticTypes.MediumImpact);
+                //MMVibrationManager.Haptic(HapticTypes.MediumImpact);
                 break;
             case hapticTypes.heavy:
-                MMVibrationManager.Haptic(HapticTypes.HeavyImpact);
+                //MMVibrationManager.Haptic(HapticTypes.HeavyImpact);
                 break;
             case hapticTypes.success:
-                MMVibrationManager.Haptic(HapticTypes.Success);
+               // MMVibrationManager.Haptic(HapticTypes.Success);
                 break;
             case hapticTypes.failure:
-                MMVibrationManager.Haptic(HapticTypes.Failure);
+               // MMVibrationManager.Haptic(HapticTypes.Failure);
                 break;
         }
     }

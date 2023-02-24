@@ -3,7 +3,7 @@
 --- !u!129 &1
 PlayerSettings:
   m_ObjectHideFlags: 0
-  serializedVersion: 23
+  serializedVersion: 22
   productGUID: 051db3ffe73e443a3b2b2241db77a4f5
   AndroidProfiler: 0
   AndroidFilterTouchesWhenObscured: 0
@@ -169,7 +169,7 @@ PlayerSettings:
   AndroidTargetSdkVersion: 31
   AndroidPreferredInstallLocation: 1
   aotOptions: 
-  stripEngineCode: 1
+  stripEngineCode: 0
   iPhoneStrippingLevel: 0
   iPhoneScriptCallOptimization: 0
   ForceInternetPermission: 0
@@ -694,7 +694,6 @@ PlayerSettings:
   switchNetworkInterfaceManagerInitializeEnabled: 1
   switchPlayerConnectionEnabled: 1
   switchUseNewStyleFilepaths: 0
-  switchUseLegacyFmodPriorities: 1
   switchUseMicroSleepForYield: 1
   switchEnableRamDiskSupport: 0
   switchMicroSleepForYieldTime: 25
@@ -796,7 +795,7 @@ PlayerSettings:
   webGLDecompressionFallback: 0
   scriptingDefineSymbols:
     0: MOREMOUNTAINS_NICEVIBRATIONS;DREAMTECK_SPLINES;HOMA_BELLY;TTP_PRIVACY_SETTINGS;TTP_REWARDED_ADS;TTP_REWARDED_INTERSTITIALS;TTP_POPUPMGR;TTP_PROMOTION;TTP_GAMEPROGRESSION;TTP_APPSFLYER;TTP_CRASHTOOL;TTP_RATEUS;TTP_BANNERS;TTP_INTERSTITIALS;TTP_OPENADS;TTP_ANALYTICS
-    4: TTP_REWARDED_INTERSTITIALS;TTP_PRIVACY_SETTINGS;TTP_GAMEPROGRESSION;TTP_APPSFLYER;TTP_RATEUS;TTP_BANNERS;TTP_REWARDED_ADS;TTP_POPUPMGR;TTP_PROMOTION;TTP_CRASHTOOL;TTP_INTERSTITIALS;TTP_OPENADS;TTP_ANALYTICS;DREAMTECK_SPLINES
+    4: TTP_REWARDED_INTERSTITIALS;TTP_PRIVACY_SETTINGS;TTP_GAMEPROGRESSION;TTP_APPSFLYER;TTP_RATEUS;TTP_BANNERS;TTP_REWARDED_ADS;TTP_POPUPMGR;TTP_PROMOTION;TTP_CRASHTOOL;TTP_INTERSTITIALS;TTP_OPENADS;TTP_ANALYTICS;DREAMTECK_SPLINES;MOREMOUNTAINS_NICEVIBRATIONS
     7: TTP_REWARDED_INTERSTITIALS;TTP_PRIVACY_SETTINGS;TTP_GAMEPROGRESSION;TTP_APPSFLYER;TTP_RATEUS;TTP_BANNERS;TTP_REWARDED_ADS;TTP_POPUPMGR;TTP_PROMOTION;TTP_CRASHTOOL;TTP_INTERSTITIALS;TTP_OPENADS;TTP_ANALYTICS
   additionalCompilerArguments: {}
   platformArchitecture: {}
@@ -892,7 +891,6 @@ PlayerSettings:
     m_VersionName: 
   apiCompatibilityLevel: 6
   activeInputHandler: 0
-  windowsGamepadBackendHint: 0
   cloudProjectId: 
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []

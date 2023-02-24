@@ -51,7 +51,7 @@ namespace MoreMountains.NiceVibrations
             try
             {
 
-                if (EditorUserBuildSettings.symlinkSources)
+                if (EditorUserBuildSettings.symlinkLibraries)
                 {
                     Debug.LogError("[MMNVBuildPostProcessor] Please make sure you set 'Symlink Unity Libraries' to false in your build settings before building.");
                 }
