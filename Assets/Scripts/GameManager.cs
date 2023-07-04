@@ -23,6 +23,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] TextMeshProUGUI dayTxt, cashTxt, orderCashTxt;
     [SerializeField] Customer customer;
     [SerializeField] GameObject[] stars;
+    public Texture2D hand, tap;
 
     [HideInInspector] public bool gameStarted;
     [HideInInspector] public int level, currentLevel, wallLevel, floorLevel, tableLevel, cash, orderCash, touchCount;
@@ -43,7 +44,7 @@ public class GameManager : MonoBehaviour
     private Camera cam;
     private Ingredients prevIngredient;
     private int targetTouchCount, sauceCount;
-    private float dropHeight = 1.1f, popPitch = 0.5f, matchPercentage, squeezeVal;
+    private float dropHeight = 1.6f, popPitch = 0.5f, matchPercentage, squeezeVal;
     private Level currentOrder = new Level();
     private TubeGenerator currentSauce;
     private SplinePositioner bottlePosition;
@@ -150,6 +151,13 @@ public class GameManager : MonoBehaviour
 
     void Update()
     {
+#if UNITY_EDITOR
+        if (Input.GetMouseButtonDown(0))
+            Cursor.SetCursor(tap, new Vector2(30, 20), CursorMode.ForceSoftware);
+        if (Input.GetMouseButtonUp(0))
+            Cursor.SetCursor(hand, new Vector2(30, 20), CursorMode.ForceSoftware);
+#endif 
+
         #region MyDebug
 #if UNITY_EDITOR
         if (Input.GetMouseButtonDown(1))
@@ -177,11 +185,11 @@ public class GameManager : MonoBehaviour
                     cut = false;
                     cutTut.SetActive(false);
                     DOTween.Kill(2);
-                    knife.DOMove(new Vector3(-3, 1.05f, -2), 1).SetEase(Ease.Linear).OnComplete(()=> knife.gameObject.SetActive(false));
+                    knife.DOMove(new Vector3(-3, 1.55f, -2), 1).SetEase(Ease.Linear).OnComplete(()=> knife.gameObject.SetActive(false));
 
-                    breadBase.DOMove(new Vector3(0, 1, -0.25f), 0.5f).SetEase(Ease.Linear).SetDelay(0.5f);
-                    bread.DOJump(new Vector3(0, 1.2f, 0.25f), 0.3f, 1, 1).SetEase(Ease.Linear).SetDelay(0.5f);
-                    bread.DORotate(new Vector3(180, 0, 0), 1).SetEase(Ease.Linear).SetDelay(0.5f).OnComplete(() =>
+                    //breadBase.DOMove(new Vector3(0, 1.5f, -0.25f), 0.5f).SetEase(Ease.Linear).SetDelay(0.5f);
+                    //bread.DOJump(new Vector3(0, 1.2f, 0.25f), 0.3f, 1, 1).SetEase(Ease.Linear).SetDelay(0.5f);
+                    bread.DORotate(new Vector3(180, 0, 0), 1).SetEase(Ease.Linear).OnComplete(() =>
                     {
                         cheeseNToastPrompt.SetActive(true);
                         //ingredientSelection.SetActive(true);
@@ -191,11 +199,11 @@ public class GameManager : MonoBehaviour
                     });
 
                 });
-                knife.DOMoveZ(-0.2f, 0.2f).SetEase(Ease.Linear).SetLoops(-1, LoopType.Yoyo).SetId(2);
+                knife.DOMoveZ(-0.4f, 0.2f).SetEase(Ease.Linear).SetLoops(-1, LoopType.Yoyo).SetId(2);
             }
             if (squeeze)
             {
-                DOTween.To(() => squeezeVal, x => squeezeVal = x, 1, 1 - squeezeVal).SetId(3).SetEase(Ease.Linear).OnComplete(()=>
+                DOTween.To(() => squeezeVal, x => squeezeVal = x, 1, (1 - squeezeVal) * 3f).SetId(3).SetEase(Ease.Linear).OnComplete(()=>
                 {
                     if (sauceCount < 3)
                         sauceSelection.SetActive(true);
@@ -244,15 +252,14 @@ public class GameManager : MonoBehaviour
         {
             PlaySound(soundTypes.win);
 
-
             nextButton.SetActive(false);
             cam.transform.GetChild(0).gameObject.SetActive(true);
             sauceSelection.SetActive(false);
-            breadBase.DOMove(new Vector3(0, 1, 0), 0.5f).SetEase(Ease.Linear).SetDelay(0.5f);
+            breadBase.DOMove(new Vector3(0, 1.5f, 0), 0.5f).SetEase(Ease.Linear).SetDelay(0.5f);
             bread.parent = null;
             breadBase.parent = null;
-            bread.DOJump(new Vector3(0, dropHeight, 0), dropHeight + 0.3f, 1, 1).SetEase(Ease.Linear);
-            bread.DORotate(new Vector3(360, 0, 0), 1).SetEase(Ease.Linear).OnComplete(() =>
+            bread.DOMoveY(dropHeight, 1).SetEase(Ease.Linear);
+            bread.DORotate(Vector3.zero, 1).From(Vector3.right * 180).SetEase(Ease.Linear).OnComplete(() =>
             {
 
                 cashPanel.SetActive(true);
@@ -273,31 +280,6 @@ public class GameManager : MonoBehaviour
             sauceadded = true;
             ingredientSelection.SetActive(false);
             sauceSelection.SetActive(true);
-        }
-    }
-
-    public void StepAppend()
-    {
-        switch (steps)
-        {
-            case Step.acceptOrder:
-
-            break;
-            case Step.chooseBread:
-
-            break;
-            case Step.cheeseNtoast:
-
-            break;
-            case Step.ingredients:
-
-            break;
-            case Step.sauces:
-
-            break;
-            case Step.done:
-
-            break;
         }
     }
 
@@ -530,35 +512,35 @@ public class GameManager : MonoBehaviour
         {
             case "italian":
                 breadType = Breads.italian;
-                bread = Instantiate(italianBread, new Vector3(0, 1.5f, 0), Quaternion.identity);
+                bread = Instantiate(italianBread, new Vector3(0, 2f, 0.18f), Quaternion.identity);
                 break;
             case "sesame":
                 breadType = Breads.sesame;
-                bread = Instantiate(sesameBread, new Vector3(0, 1.5f, 0), Quaternion.identity);
+                bread = Instantiate(sesameBread, new Vector3(0, 2f, 0.18f), Quaternion.identity);
                 break;
             case "grill":
                 breadType = Breads.grill;
-                bread = Instantiate(GrillBread, new Vector3(0, 1.5f, 0), Quaternion.identity);
+                bread = Instantiate(GrillBread, new Vector3(0, 2f, 0.18f), Quaternion.identity);
                 break;
             case "oats":
                 breadType = Breads.oats;
-                bread = Instantiate(oatsBread, new Vector3(0, 1.5f, 0), Quaternion.identity);
+                bread = Instantiate(oatsBread, new Vector3(0, 2f, 0.18f), Quaternion.identity);
                 break;
         }
         breadSelection.SetActive(false);
-        DOTween.Kill(camTween);
-        cam.transform.DOMove(camPositions.GetChild(1).position, 0.5f).SetEase(Ease.Linear).SetId(camTween);
-        cam.transform.DORotate(camPositions.GetChild(1).eulerAngles, 0.5f).SetEase(Ease.Linear).SetId(camTween);
+        //DOTween.Kill(camTween);
+        //cam.transform.DOMove(camPositions.GetChild(1).position, 0.5f).SetEase(Ease.Linear).SetId(camTween);
+        //cam.transform.DORotate(camPositions.GetChild(1).eulerAngles, 0.5f).SetEase(Ease.Linear).SetId(camTween);
 
         paper.gameObject.SetActive(true);
-        paper.DOMove(new Vector3(0, 1.01f, 0), 0.3f).SetEase(Ease.Linear);
-        breadBase = Instantiate(breadBottom, new Vector3(0, 1.4f, 0), Quaternion.identity);
-        breadBase.DOMove(new Vector3(0, 1, 0), 0.5f).SetEase(Ease.Linear);
-        bread.DOMove(new Vector3(0, 1.1f, 0), 0.5f).SetEase(Ease.Linear);
+        paper.DOMove(new Vector3(0, 1.51f, 0.25f), 0.3f).SetEase(Ease.Linear);
+        breadBase = Instantiate(breadBottom, new Vector3(0, 1.9f, 0), Quaternion.identity);
+        breadBase.DOMove(new Vector3(0, 1.5f, 0), 0.5f).SetEase(Ease.Linear);
+        bread.DOMove(new Vector3(0, 1.6f, 0.18f), 0.5f).SetEase(Ease.Linear);
 
         cutTut.SetActive(true);
         knife.gameObject.SetActive(true);
-        knife.DOMove(new Vector3(0.6f, 1.1f, -0.5f), 0.5f).From(new Vector3(3, 1.1f, -2)).SetEase(Ease.Linear).OnComplete(() => cut = true);
+        knife.DOMove(new Vector3(0.6f, 1.6f, -0.5f), 0.5f).From(new Vector3(3, 1.6f, -2)).SetEase(Ease.Linear).OnComplete(() => cut = true);
     }
     public void SelectIngredient(string name)
     {
@@ -632,7 +614,7 @@ public class GameManager : MonoBehaviour
                 InitialiseSpheres(2);
                 break;
         }
-        ingredientSelection.SetActive(false);
+        //ingredientSelection.SetActive(false);
         //DOTween.Kill(camTween);
         //cam.transform.DOMove(camPositions.GetChild(1).position, 0.5f).SetEase(Ease.Linear).SetId(camTween);
         //cam.transform.DORotate(camPositions.GetChild(1).eulerAngles, 0.5f).SetEase(Ease.Linear).SetId(camTween);
@@ -715,7 +697,7 @@ public class GameManager : MonoBehaviour
         cam.transform.DORotate(camPositions.GetChild(6).eulerAngles, 0.5f).SetEase(Ease.Linear).SetId(camTween).OnComplete(() =>
         {
             ovenDoor.DOLocalRotate(new Vector3(90, 0, 0), 0.5f).SetEase(Ease.Linear);
-            paper.DOMoveY(2, 0.3f).SetEase(Ease.Linear);
+            paper.DOMoveY(2f, 0.3f).SetEase(Ease.Linear);
             paper.DOMove(new Vector3(-4.3f, 2.1f, 0), 0.3f).SetDelay(0.5f).SetEase(Ease.Linear);
             paper.DORotate(new Vector3(0, -90, 0), 0.3f).SetEase(Ease.Linear);
             ovenDoor.DOLocalRotate(new Vector3(0, 0, 0), 0.5f).SetDelay(1).SetEase(Ease.Linear);
@@ -723,8 +705,8 @@ public class GameManager : MonoBehaviour
             {
                 ovenDoor.DOLocalRotate(new Vector3(90, 0, 0), 0.5f).SetEase(Ease.Linear);
                 paper.DORotate(new Vector3(0, 0, 0), 0.3f).SetDelay(0.6f).SetEase(Ease.Linear);
-                paper.DOMoveY(1.01f, 0.3f).SetDelay(1f).SetEase(Ease.Linear);
-                paper.DOMove(new Vector3(0, 2, 0), 0.5f).SetDelay(0.5f).SetEase(Ease.Linear).OnComplete(()=>
+                paper.DOMoveY(1.51f, 0.3f).SetDelay(1f).SetEase(Ease.Linear);
+                paper.DOMove(new Vector3(0, 2.5f, 0.25f), 0.5f).SetDelay(0.5f).SetEase(Ease.Linear).OnComplete(()=>
                 {
                     DOTween.Kill(camTween);
                     cam.transform.DOMove(camPositions.GetChild(1).position, 0.5f).SetEase(Ease.Linear).SetId(camTween);
@@ -907,8 +889,11 @@ public class GameManager : MonoBehaviour
         }
 
         DOTween.Kill(camTween);
-        cam.transform.DOMove(camPositions.GetChild(4).position, 0.5f).SetEase(Ease.Linear).SetId(camTween);
-        cam.transform.DORotate(camPositions.GetChild(4).eulerAngles, 0.5f).SetEase(Ease.Linear).SetId(camTween).OnComplete(() => breadSelection.SetActive(true));
+        cam.transform.DOMove(camPositions.GetChild(1).position, 0.5f).SetEase(Ease.Linear).SetId(camTween);
+        cam.transform.DORotate(camPositions.GetChild(1).eulerAngles, 0.5f).SetEase(Ease.Linear).SetId(camTween).OnComplete(() =>
+        {
+            breadSelection.SetActive(true);
+        });
 
         sampleCam.DOMove(new Vector3(0, 1, 9), 0.5f).SetDelay(0.25f).SetEase(Ease.Linear);
         sampleCam.DORotate(new Vector3(25, 0, 0), 0.5f).SetDelay(0.25f).SetEase(Ease.Linear);
