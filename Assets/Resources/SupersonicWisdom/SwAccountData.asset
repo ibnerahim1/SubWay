@@ -1,0 +1,50 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bde5b51eef6a4560b2a2442b047a9a7, type: 3}
+  m_Name: SwAccountData
+  m_EditorClassIdentifier: 
+  titlesList:
+  - games: []
+    id: 
+    name: --- select ---
+    unityProjectId: 
+  - games:
+    - adMobId: 
+      bundleId: com.GDGames.Subway
+      facebookAppId: 1165714697891645
+      facebookToken: a3cf30efe3df08fb6124278d60c79cd7
+      gameAnalyticsKey: d7320c2de65cc2d8b0b72c03379efe5d
+      gameAnalyticsSecret: 62710377c70ec5902a8decc881b6fe17f922d0e4
+      id: 5f21bfa7-06d1-4f42-a221-64ac2235592e
+      isAppKey: 
+      os: android
+      platform: google_play
+      storeId: com.GDGames.Subway
+    id: ea0248c1-52f8-4aa4-a499-4f06e5ae0d4a
+    name: Make My Sub
+    unityProjectId: 
+  - games:
+    - adMobId: 
+      bundleId: 
+      facebookAppId: 
+      facebookToken: 
+      gameAnalyticsKey: 9f7784386732b1b674cea78885edba00
+      gameAnalyticsSecret: a7e208aa0c2cd5348f6d92ff5b1f55d663ac4d89
+      id: 882cfe41-e681-4fe5-ad4e-53ff2fe478b3
+      isAppKey: 
+      os: android
+      platform: google_play
+      storeId: 
+    id: ca2c60b8-1f7e-456d-b470-d1d6f1f9642f
+    name: Rate My Pass
+    unityProjectId: 
+  integrationGuideUrl: 

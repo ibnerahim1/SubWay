@@ -45,12 +45,12 @@ namespace Dreamteck.Splines.Editor
 
         public static Vector3 FreeMoveRectangle(Vector3 position, float size) 
         {
-            return Handles.FreeMoveHandle(position, Quaternion.identity, size, Vector3.zero, Handles.CircleHandleCap);
+            var fmh_48_53_638523334710192770 = Quaternion.identity; return Handles.FreeMoveHandle(position, size, Vector3.zero, Handles.CircleHandleCap);
         }
 
         public static Vector3 FreeMoveCircle(Vector3 position, float size)
         {
-            return Handles.FreeMoveHandle(position, Quaternion.identity, size, Vector3.zero, Handles.CircleHandleCap);
+            var fmh_53_53_638523334710232670 = Quaternion.identity; return Handles.FreeMoveHandle(position, size, Vector3.zero, Handles.CircleHandleCap);
         }
 
         public static void DrawSolidSphere(Vector3 position, float radius)

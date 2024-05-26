@@ -20,7 +20,7 @@ public class TipRenderer : MonoBehaviour
     {
         active = true;
         transform.position = new Vector3(transform.position.x, height + 0.05f, transform.position.z);
-        material.DOFade(1, 0.5f).SetEase(Ease.Linear).SetLoops(-1, LoopType.Yoyo).SetId(transform.GetHashCode());
+        material.DOFade(1f, 0.5f).SetEase(Ease.InSine).SetLoops(-1, LoopType.Yoyo).SetId(transform.GetHashCode());
     }
     private void OnMouseEnter()
     {

@@ -74,8 +74,7 @@ namespace Dreamteck.Splines.Editor
         private Vector3 SurfaceMoveHandle(Vector3 inputPosition, float size = 0.2f)
         {
             Vector3 lastPosition = inputPosition;
-            inputPosition = Handles.FreeMoveHandle(inputPosition, 
-                Quaternion.LookRotation(SceneView.currentDrawingSceneView.camera.transform.position - inputPosition), 
+            var fmh_78_17_638523334710193240 = Quaternion.LookRotation(SceneView.currentDrawingSceneView.camera.transform.position - inputPosition); inputPosition = Handles.FreeMoveHandle(inputPosition, 
                 HandleUtility.GetHandleSize(inputPosition) * size, Vector3.zero, Handles.CircleHandleCap);
             if (lastPosition != inputPosition)
             {

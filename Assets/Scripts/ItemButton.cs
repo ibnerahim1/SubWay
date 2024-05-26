@@ -5,7 +5,6 @@ using UnityEngine;
 public class ItemButton : MonoBehaviour
 {
     public int type;
-    public string name;
     private GameManager gManager;
 
     private void Start()
@@ -25,12 +24,19 @@ public class ItemButton : MonoBehaviour
     //}
     private void OnMouseDown()
     {
+        if (Helpers.IsOnUI()) return;
         if(type == 0)
             gManager.BreadSelect(name);
         if (type == 1)
+        {
             gManager.SelectIngredient(name);
+            gameObject.SetActive(false);
+        }
         if (type == 2)
+        {
             gManager.SauceSelect(name);
+            gameObject.SetActive(false);
+        }
     }
 
 }
