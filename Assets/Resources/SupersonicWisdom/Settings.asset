@@ -28,7 +28,7 @@ MonoBehaviour:
   adMobIosAppId: 
   adMobIosChinaAppId: 
   adMobAndroidAppId: 
-  areTextMeshProEssentialsInstalled: 1
+  areTextMeshProEssentialsInstalled: 0
   disableFacebookInit: 0
   testPrivacyPolicy: -1
   customInterstitialMinimumInterval: 0
@@ -60,5 +60,5 @@ MonoBehaviour:
   validateBeforeBuild: 1
   accountEmail: ibnerahim1@gmail.com
   selectedGameIndex: 1
-  isTitleSelectedAutomatically: 1
+  isTitleSelectedAutomatically: 0
   wasLoggedIn: 1

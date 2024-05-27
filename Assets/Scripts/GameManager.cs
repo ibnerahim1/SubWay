@@ -50,6 +50,9 @@ public class GameManager : MonoBehaviour
     private SplinePositioner bottlePosition;
     public bool cut, squeeze, sauceadded;
 
+    public Texture2D hand, tap;
+    private bool mouseDown;
+
     private void Awake()
     {
         LoadData();
@@ -152,12 +155,13 @@ public class GameManager : MonoBehaviour
 
     void Update()
     {
-        //#if UNITY_EDITOR
-        //        if (Input.GetMouseButtonDown(0))
-        //            Cursor.SetCursor(tap, new Vector2(30, 20), CursorMode.ForceSoftware);
-        //        if (Input.GetMouseButtonUp(0))
-        //            Cursor.SetCursor(hand, new Vector2(30, 20), CursorMode.ForceSoftware);
-        //#endif 
+#if UNITY_EDITOR
+        if (Input.GetMouseButtonDown(0))
+            mouseDown = true;
+        if (Input.GetMouseButtonUp(0))
+            mouseDown = false;
+        Cursor.SetCursor(mouseDown? tap: hand, new Vector2(35, 35), CursorMode.ForceSoftware);
+#endif
 
         #region MyDebug
 #if UNITY_EDITOR
