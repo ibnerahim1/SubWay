@@ -52,6 +52,7 @@ public class GameManager : MonoBehaviour
 
     public Texture2D hand, tap;
     private bool mouseDown;
+    private int a = 6;
 
     private void Awake()
     {
@@ -728,6 +729,7 @@ public class GameManager : MonoBehaviour
     }
     public void SkipCheeseNtoast()
     {
+        a--;
         cheeseNToastPrompt.SetActive(false);
         ingredientSelection.SetActive(true);
     }
@@ -786,7 +788,7 @@ public class GameManager : MonoBehaviour
             }
             else
             {
-                if (ingredientLayers.Count > ingredientContainer.childCount - 1)
+                if (ingredientLayers.Count > a)
                     Next();
                 else
                 {
@@ -795,7 +797,7 @@ public class GameManager : MonoBehaviour
                     //cam.transform.DOMove(camPositions.GetChild(2).position, 0.5f).SetEase(Ease.Linear).SetId(camTween);
                     //cam.transform.DORotate(camPositions.GetChild(2).eulerAngles, 0.5f).SetEase(Ease.Linear).SetId(camTween).OnComplete(() => ingredientSelection.SetActive(true));
                 }
-                if (ingredientLayers.Count > currentOrder.ingredients.Count - 1)
+                if (ingredientLayers.Count > 2)
                     nextButton.SetActive(true);
             }
         }
